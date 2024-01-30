@@ -21,7 +21,7 @@ jobs:
         run: |
           ssh -i deploy_key -p ${{ secrets.SERVER_PORT }} -o StrictHostKeyChecking=no ${{ env.HOST }} "\
           docker stop test-bot && \
-          docker rmi ${{ env.IMAGE_ID }}"
+          docker rmi -f ${{ env.IMAGE_ID }}"
 
       - name: Pull new image
         run: |
