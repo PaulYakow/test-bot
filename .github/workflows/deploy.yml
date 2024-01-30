@@ -29,6 +29,6 @@ jobs:
 
       - name: Run container
         run: |
-          ssh -i deploy_key -o StrictHostKeyChecking=no ${{ env.HOST }} "\
+          ssh -i deploy_key -p ${{ secrets.SERVER_PORT }} -o StrictHostKeyChecking=no ${{ env.HOST }} "\
           docker stop test-bot && \
           docker run -d --name test-bot --env TG_TOKEN=${{ secrets.TG_TOKEN }} ${{ env.IMAGE_ID }}"
