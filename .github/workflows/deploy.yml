@@ -8,8 +8,6 @@ jobs:
       HOST: ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }}
       SSH_PORT: ${{ secrets.SERVER_PORT }}
       IMAGE_ID: ghcr.io/paulyakow/test-bot:latest
-      ENV_FILE_PATH: /srv/test.txt
-      START_CMD: bash /srv/start.sh
 
     runs-on: ubuntu-latest
     steps:
@@ -20,13 +18,9 @@ jobs:
           echo "$SSH_KEY" > deploy_key
           chmod 600 deploy_key
 
-      - name: Export envs to server
+      - name: Restart container
         run: |
           ssh -i deploy_key -p $SSH_PORT -o StrictHostKeyChecking=no $HOST "\
           export IMAGE_ID=$IMAGE_ID && \
           export TG_TOKEN=${{ secrets.TG_TOKEN }} && \
           bash /srv/start.sh"
-
-#      - name: Restart container
-#        run: |
-#          ssh -i deploy_key -p $SSH_PORT -o StrictHostKeyChecking=no $HOST "$START_CMD"

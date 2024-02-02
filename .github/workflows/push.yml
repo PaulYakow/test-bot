@@ -1,0 +1,49 @@
+name: Push image and deploy
+on:
+  push:
+
+jobs:
+  push:
+    env:
+      IMAGE_NAME: test-bot
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build . --file Dockerfile --tag $IMAGE_NAME
+      - name: Log into registry
+        run: echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u $ --password-stdin
+      - name: Push image
+        run: |
+          IMAGE_ID=ghcr.io/${{ github.repository_owner }}/$IMAGE_NAME
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+          VERSION=latest
+          echo IMAGE_ID=$IMAGE_ID
+          echo VERSION=$VERSION
+          docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
+          docker push $IMAGE_ID:$VERSION
+
+  deploy:
+    needs: push
+    env:
+      HOST: ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }}
+      SSH_PORT: ${{ secrets.SERVER_PORT }}
+      IMAGE_ID: ghcr.io/paulyakow/test-bot:latest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create file with deploy key
+        env:
+          SSH_KEY: ${{ secrets.SERVER_KEY }}
+        run: |
+          echo "$SSH_KEY" > deploy_key
+          chmod 600 deploy_key
+
+      - name: Restart container
+        run: |
+          ssh -i deploy_key -p $SSH_PORT -o StrictHostKeyChecking=no $HOST "\
+          export IMAGE_ID=$IMAGE_ID && \
+          export TG_TOKEN=${{ secrets.TG_TOKEN }} && \
+          bash /srv/start.sh"
