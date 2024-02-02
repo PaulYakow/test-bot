@@ -24,10 +24,7 @@ jobs:
         run: |
           ssh -i deploy_key -p $SSH_PORT -o StrictHostKeyChecking=no $HOST "\
           export IMAGE_ID=$IMAGE_ID && \
-          export TG_TOKEN=${{ secrets.TG_TOKEN }} && \
-          echo $USER > $ENV_FILE_PATH && \
-          echo $(groups) >> $ENV_FILE_PATH && \
-          echo $(id) >> $ENV_FILE_PATH"
+          export TG_TOKEN=${{ secrets.TG_TOKEN }}"
 
       - name: Restart container
         run: |
