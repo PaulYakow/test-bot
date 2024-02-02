@@ -8,7 +8,7 @@ jobs:
       HOST: ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }}
       SSH_PORT: ${{ secrets.SERVER_PORT }}
       IMAGE_ID: ghcr.io/paulyakow/test-bot:latest
-      ENV_FILE_PATH: /srv/.env
+      ENV_FILE_PATH: /srv/test.txt
       START_CMD: bash /srv/start.sh
 
     runs-on: ubuntu-latest
@@ -23,8 +23,11 @@ jobs:
       - name: Export envs to server
         run: |
           ssh -i deploy_key -p $SSH_PORT -o StrictHostKeyChecking=no $HOST "\
-          echo IMAGE_ID=$IMAGE_ID > $ENV_FILE_PATH && \
-          echo TG_TOKEN=${{ secrets.TG_TOKEN }} >> $ENV_FILE_PATH"
+          export IMAGE_ID=$IMAGE_ID && \
+          export TG_TOKEN=${{ secrets.TG_TOKEN }} && \
+          echo $USER > $ENV_FILE_PATH && \
+          echo $(groups) >> $ENV_FILE_PATH && \
+          echo $(id) >> $ENV_FILE_PATH"
 
       - name: Restart container
         run: |
