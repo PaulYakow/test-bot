@@ -28,12 +28,18 @@ func main() {
 		os.Exit(1)
 	}
 
-	go b.StartWebhook(ctx)
+	b.SetWebhook(ctx, &bot.SetWebhookParams{
+		URL: "http://80.87.108.181",
+	})
 
-	err = http.ListenAndServe(":21021", b.WebhookHandler())
-	if err != nil {
-		log.Println(err)
-	}
+	go func() {
+		err = http.ListenAndServe(":21021", b.WebhookHandler())
+		if err != nil {
+			log.Println(err)
+		}
+	}()
+
+	b.StartWebhook(ctx)
 }
 
 func callbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
