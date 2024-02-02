@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 
@@ -17,7 +18,7 @@ func main() {
 	defer cancel()
 
 	opts := []bot.Option{
-		bot.WithDefaultHandler(defaultHandler),
+		bot.WithDefaultHandler(handler),
 		bot.WithCallbackQueryDataHandler("button", bot.MatchTypePrefix, callbackHandler),
 	}
 
@@ -27,7 +28,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	b.Start(ctx)
+	go b.StartWebhook(ctx)
+
+	err = http.ListenAndServe(":21021", b.WebhookHandler())
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func callbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -39,20 +45,21 @@ func callbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		CallbackQueryID: update.CallbackQuery.ID,
 		ShowAlert:       false,
 	})
+	msg := "You selected the button: " + update.CallbackQuery.Data + update.Message.Chat.Username
 	b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: update.CallbackQuery.Message.Chat.ID,
-		Text:   "You selected the button: " + update.CallbackQuery.Data,
+		Text:   msg,
 	})
 }
 
-func defaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	kb := &models.InlineKeyboardMarkup{
 		InlineKeyboard: [][]models.InlineKeyboardButton{
 			{
-				{Text: "Button 1", CallbackData: "button_1"},
-				{Text: "Button 2", CallbackData: "button_2"},
+				{Text: "Button 1", CallbackData: "button #1"},
+				{Text: "Button 2", CallbackData: "button #2"},
 			}, {
-				{Text: "Button 3", CallbackData: "button_3"},
+				{Text: "Button 3", CallbackData: "button #3"},
 			},
 		},
 	}
