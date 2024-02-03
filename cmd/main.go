@@ -29,7 +29,7 @@ func main() {
 	}
 
 	b.SetWebhook(ctx, &bot.SetWebhookParams{
-		URL: "http://80.87.108.181:80",
+		URL: "https://vm-8dae0697.na4u.ru",
 	})
 
 	go func() {
