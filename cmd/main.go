@@ -29,7 +29,7 @@ func main() {
 	}
 
 	b.SetWebhook(ctx, &bot.SetWebhookParams{
-		URL: "https://vm-8dae0697.na4u.ru",
+		URL: "https://vm-8dae0697.na4u.ru/test-bot",
 	})
 
 	go func() {
