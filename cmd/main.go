@@ -28,13 +28,35 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Register handlers
-	b.RegisterHandler(bot.HandlerTypeMessageText, "/add-user", bot.MatchTypeExact, addUserHandler)
-	b.RegisterHandler(bot.HandlerTypeMessageText, "/inline", bot.MatchTypeExact, inlineHandler)
-	b.RegisterHandler(bot.HandlerTypeMessageText, "/inline-kb", bot.MatchTypeExact, inlineKeyboardHandler)
+	// FIXME: нет списка команд с описанием при вводе '/'
+	addUserCmd := models.BotCommand{
+		Command:     "add_user",
+		Description: "Добавить пользователя",
+	}
+	inlineCmd := models.BotCommand{
+		Command:     "inline",
+		Description: "Пример inline-режима",
+	}
+	inlineKbCmd := models.BotCommand{
+		Command:     "inline_kb",
+		Description: "Пример inline клавиатуры",
+	}
+
+	b.SetMyCommands(ctx, &bot.SetMyCommandsParams{
+		Commands: []models.BotCommand{
+			addUserCmd,
+			inlineCmd,
+			inlineKbCmd,
+		},
+	})
 
 	// Register callback
 	b.RegisterHandler(bot.HandlerTypeMessageText, "button", bot.MatchTypePrefix, callbackHandler)
+
+	// Register handlers
+	b.RegisterHandler(bot.HandlerTypeMessageText, addUserCmd.Command, bot.MatchTypeExact, addUserHandler)
+	b.RegisterHandler(bot.HandlerTypeMessageText, inlineCmd.Command, bot.MatchTypeExact, inlineHandler)
+	b.RegisterHandler(bot.HandlerTypeMessageText, inlineKbCmd.Command, bot.MatchTypeExact, inlineKeyboardHandler)
 
 	b.SetWebhook(ctx, &bot.SetWebhookParams{
 		URL: "https://vm-8dae0697.na4u.ru/test-bot",
@@ -89,14 +111,16 @@ func inlineKeyboardHandler(ctx context.Context, b *bot.Bot, update *models.Updat
 }
 
 func defaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	// FIXME: нет обработки Markdown
 	msg := `*Команды для взаимодействия:*
 _/start_ - начало работы с ботом (происходит запись пользователя в БД),
 _/add-user_ - добавить пользователя (Фамилия Имя Должность Ник_Телеграм)
 _/add-absence_ - добавить новую запись об отсутствии работника (Работник (id?) Код_отсутствия Дата_начала).
 `
 	b.SendMessage(ctx, &bot.SendMessageParams{
-		ChatID: update.Message.Chat.ID,
-		Text:   msg,
+		ChatID:    update.Message.Chat.ID,
+		Text:      msg,
+		ParseMode: "MarkdownV2",
 	})
 }
 
