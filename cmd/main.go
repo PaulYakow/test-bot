@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -51,7 +52,10 @@ func callbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		CallbackQueryID: update.CallbackQuery.ID,
 		ShowAlert:       false,
 	})
-	msg := "You selected the button: " + update.CallbackQuery.Data + update.Message.Chat.Username
+
+	msg := fmt.Sprintf("You selected the button: %s\nUsername: %s",
+		update.CallbackQuery.Data,
+		update.CallbackQuery.Message.Chat.Username)
 	b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: update.CallbackQuery.Message.Chat.ID,
 		Text:   msg,
