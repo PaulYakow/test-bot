@@ -30,10 +30,6 @@ func main() {
 		Command:     "add_user",
 		Description: "Добавить пользователя",
 	}
-	inlineCmd := models.BotCommand{
-		Command:     "inline",
-		Description: "Пример inline-режима",
-	}
 	inlineKbCmd := models.BotCommand{
 		Command:     "inline_kb",
 		Description: "Пример inline клавиатуры",
@@ -42,7 +38,6 @@ func main() {
 	b.SetMyCommands(ctx, &bot.SetMyCommandsParams{
 		Commands: []models.BotCommand{
 			addUserCmd,
-			inlineCmd,
 			inlineKbCmd,
 		},
 	})
@@ -53,7 +48,6 @@ func main() {
 	// Register handlers
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/"+helpCmd.Command, bot.MatchTypeExact, helpHandler)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/"+addUserCmd.Command, bot.MatchTypeExact, addUserHandler)
-	b.RegisterHandler(bot.HandlerTypeMessageText, "/"+inlineCmd.Command, bot.MatchTypeExact, inlineHandler)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/"+inlineKbCmd.Command, bot.MatchTypeExact, inlineKeyboardHandler)
 
 	b.SetWebhook(ctx, &bot.SetWebhookParams{
@@ -126,9 +120,9 @@ func inlineKeyboardHandler(ctx context.Context, b *bot.Bot, update *models.Updat
 func helpHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	// FIXME: нет обработки Markdown
 	msg := `*Команды для взаимодействия:*
-_/start_ начало работы с ботом (происходит запись пользователя в БД),
-_/add-user_ добавить пользователя (Фамилия Имя Должность Ник_Телеграм)
-_/add-absence_ добавить новую запись об отсутствии работника (Работник (id?) Код_отсутствия Дата_начала).
+_/start_ начало работы с ботом
+_/add-user_ добавить пользователя
+_/add-absence_ добавить новую запись об отсутствии работника
 `
 	res, err := b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID:    update.Message.Chat.ID,
@@ -148,26 +142,4 @@ func addUserHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		ChatID: update.Message.Chat.ID,
 		Text:   msg,
 	})
-}
-
-func inlineHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
-	if update.InlineQuery == nil {
-		return
-	}
-
-	results := []models.InlineQueryResult{
-		&models.InlineQueryResultArticle{ID: "1", Title: "Foo 1", InputMessageContent: &models.InputTextMessageContent{MessageText: "foo 1"}},
-		&models.InlineQueryResultArticle{ID: "2", Title: "Foo 2", InputMessageContent: &models.InputTextMessageContent{MessageText: "foo 2"}},
-		&models.InlineQueryResultArticle{ID: "3", Title: "Foo 3", InputMessageContent: &models.InputTextMessageContent{MessageText: "foo 3"}},
-	}
-
-	ok, err := b.AnswerInlineQuery(ctx, &bot.AnswerInlineQueryParams{
-		InlineQueryID: update.InlineQuery.ID,
-		Results:       results,
-	})
-	if err != nil {
-		log.Println("inline answer:", ok, err)
-		return
-	}
-	log.Println("inline:", ok)
 }
