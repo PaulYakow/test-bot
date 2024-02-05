@@ -19,8 +19,7 @@ func main() {
 	defer cancel()
 
 	opts := []bot.Option{
-		bot.WithDefaultHandler(handler),
-		bot.WithCallbackQueryDataHandler("button", bot.MatchTypePrefix, callbackHandler),
+		bot.WithDefaultHandler(defaultHandler),
 	}
 
 	b, err := bot.New(os.Getenv("TG_TOKEN"), opts...)
@@ -28,6 +27,14 @@ func main() {
 		log.Println(err)
 		os.Exit(1)
 	}
+
+	// Register handlers
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/add-user", bot.MatchTypeExact, addUserHandler)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/inline", bot.MatchTypeExact, inlineHandler)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/inline-kb", bot.MatchTypeExact, inlineKeyboardHandler)
+
+	// Register callback
+	b.RegisterHandler(bot.HandlerTypeMessageText, "button", bot.MatchTypePrefix, callbackHandler)
 
 	b.SetWebhook(ctx, &bot.SetWebhookParams{
 		URL: "https://vm-8dae0697.na4u.ru/test-bot",
@@ -62,14 +69,14 @@ func callbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	})
 }
 
-func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
+func inlineKeyboardHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	kb := &models.InlineKeyboardMarkup{
 		InlineKeyboard: [][]models.InlineKeyboardButton{
 			{
-				{Text: "Button 1", CallbackData: "button #1"},
-				{Text: "Button 2", CallbackData: "button #2"},
+				{Text: "Button 1", CallbackData: "button_1"},
+				{Text: "Button 2", CallbackData: "button_2"},
 			}, {
-				{Text: "Button 3", CallbackData: "button #3"},
+				{Text: "Button 3", CallbackData: "button_3"},
 			},
 		},
 	}
@@ -78,5 +85,43 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		ChatID:      update.Message.Chat.ID,
 		Text:        "Click by button",
 		ReplyMarkup: kb,
+	})
+}
+
+func defaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	msg := `*Команды для взаимодействия:*
+_/start_ - начало работы с ботом (происходит запись пользователя в БД),
+_/add-user_ - добавить пользователя (Фамилия Имя Должность Ник_Телеграм)
+_/add-absence_ - добавить новую запись об отсутствии работника (Работник (id?) Код_отсутствия Дата_начала).
+`
+	b.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID: update.Message.Chat.ID,
+		Text:   msg,
+	})
+}
+
+func addUserHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	msg := fmt.Sprintf("Пользователь %s", update.Message.Chat.Username)
+	b.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID: update.Message.Chat.ID,
+		Text:   msg,
+	})
+
+}
+
+func inlineHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	if update.InlineQuery == nil {
+		return
+	}
+
+	results := []models.InlineQueryResult{
+		&models.InlineQueryResultArticle{ID: "1", Title: "Foo 1", InputMessageContent: &models.InputTextMessageContent{MessageText: "foo 1"}},
+		&models.InlineQueryResultArticle{ID: "2", Title: "Foo 2", InputMessageContent: &models.InputTextMessageContent{MessageText: "foo 2"}},
+		&models.InlineQueryResultArticle{ID: "3", Title: "Foo 3", InputMessageContent: &models.InputTextMessageContent{MessageText: "foo 3"}},
+	}
+
+	b.AnswerInlineQuery(ctx, &bot.AnswerInlineQueryParams{
+		InlineQueryID: update.InlineQuery.ID,
+		Results:       results,
 	})
 }
