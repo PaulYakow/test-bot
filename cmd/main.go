@@ -12,8 +12,6 @@ import (
 	"github.com/go-telegram/bot/models"
 )
 
-// Send any text message to the bot after the bot has been started
-
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
@@ -77,18 +75,28 @@ func callbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	// and we're handling it. Otherwise, Telegram might retry sending the update repetitively
 	// as it thinks the callback query doesn't reach to our application. learn more by
 	// reading the footnote of the https://core.telegram.org/bots/api#callbackquery type.
-	b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
+	ok, err := b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
 		CallbackQueryID: update.CallbackQuery.ID,
 		ShowAlert:       false,
 	})
+	if err != nil {
+		log.Println("callback answer:", ok, err)
+		return
+	}
+	log.Println("callback:", ok)
 
 	msg := fmt.Sprintf("Ваша кнопка: %s\nUsername: %s",
 		update.CallbackQuery.Data,
 		update.CallbackQuery.Message.Chat.Username)
-	b.SendMessage(ctx, &bot.SendMessageParams{
+	res, err := b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: update.CallbackQuery.Message.Chat.ID,
 		Text:   msg,
 	})
+	if err != nil {
+		log.Println("callback send message:", err)
+		return
+	}
+	log.Println("callback send message:", res)
 }
 
 func inlineKeyboardHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -103,11 +111,16 @@ func inlineKeyboardHandler(ctx context.Context, b *bot.Bot, update *models.Updat
 		},
 	}
 
-	b.SendMessage(ctx, &bot.SendMessageParams{
+	res, err := b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID:      update.Message.Chat.ID,
 		Text:        "Click by button",
 		ReplyMarkup: kb,
 	})
+	if err != nil {
+		log.Println("inline KB send message:", err)
+		return
+	}
+	log.Println("inline KB send message:", res)
 }
 
 func helpHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -117,11 +130,16 @@ _/start_ - начало работы с ботом (происходит зап�
 _/add-user_ - добавить пользователя (Фамилия Имя Должность Ник_Телеграм)
 _/add-absence_ - добавить новую запись об отсутствии работника (Работник (id?) Код_отсутствия Дата_начала).
 `
-	b.SendMessage(ctx, &bot.SendMessageParams{
+	res, err := b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID:    update.Message.Chat.ID,
 		Text:      msg,
 		ParseMode: "MarkdownV2",
 	})
+	if err != nil {
+		log.Println("help send message:", err)
+		return
+	}
+	log.Println("help send message:", res)
 }
 
 func addUserHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -130,7 +148,6 @@ func addUserHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		ChatID: update.Message.Chat.ID,
 		Text:   msg,
 	})
-
 }
 
 func inlineHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -144,8 +161,13 @@ func inlineHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		&models.InlineQueryResultArticle{ID: "3", Title: "Foo 3", InputMessageContent: &models.InputTextMessageContent{MessageText: "foo 3"}},
 	}
 
-	b.AnswerInlineQuery(ctx, &bot.AnswerInlineQueryParams{
+	ok, err := b.AnswerInlineQuery(ctx, &bot.AnswerInlineQueryParams{
 		InlineQueryID: update.InlineQuery.ID,
 		Results:       results,
 	})
+	if err != nil {
+		log.Println("inline answer:", ok, err)
+		return
+	}
+	log.Println("inline:", ok)
 }
