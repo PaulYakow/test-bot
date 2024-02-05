@@ -18,16 +18,16 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	opts := []bot.Option{
-		bot.WithDefaultHandler(defaultHandler),
-	}
-
-	b, err := bot.New(os.Getenv("TG_TOKEN"), opts...)
+	b, err := bot.New(os.Getenv("TG_TOKEN"))
 	if nil != err {
 		log.Println(err)
 		os.Exit(1)
 	}
 
+	helpCmd := models.BotCommand{
+		Command:     "help",
+		Description: "Узнать подробности",
+	}
 	addUserCmd := models.BotCommand{
 		Command:     "add_user",
 		Description: "Добавить пользователя",
@@ -53,6 +53,7 @@ func main() {
 	b.RegisterHandler(bot.HandlerTypeMessageText, "button", bot.MatchTypePrefix, callbackHandler)
 
 	// Register handlers
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/"+helpCmd.Command, bot.MatchTypeExact, helpHandler)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/"+addUserCmd.Command, bot.MatchTypeExact, addUserHandler)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/"+inlineCmd.Command, bot.MatchTypeExact, inlineHandler)
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/"+inlineKbCmd.Command, bot.MatchTypeExact, inlineKeyboardHandler)
@@ -81,7 +82,7 @@ func callbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		ShowAlert:       false,
 	})
 
-	msg := fmt.Sprintf("You selected the button: %s\nUsername: %s",
+	msg := fmt.Sprintf("Ваша кнопка: %s\nUsername: %s",
 		update.CallbackQuery.Data,
 		update.CallbackQuery.Message.Chat.Username)
 	b.SendMessage(ctx, &bot.SendMessageParams{
@@ -109,7 +110,7 @@ func inlineKeyboardHandler(ctx context.Context, b *bot.Bot, update *models.Updat
 	})
 }
 
-func defaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+func helpHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	// FIXME: нет обработки Markdown
 	msg := `*Команды для взаимодействия:*
 _/start_ - начало работы с ботом (происходит запись пользователя в БД),
