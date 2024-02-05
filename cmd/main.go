@@ -121,8 +121,8 @@ func helpHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	// FIXME: нет обработки Markdown
 	msg := `*Команды для взаимодействия:*
 _/start_ начало работы с ботом
-_/add-user_ добавить пользователя
-_/add-absence_ добавить новую запись об отсутствии работника
+_/add\-user_ добавить пользователя
+_/add\-absence_ добавить новую запись об отсутствии работника
 `
 	res, err := b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID:    update.Message.Chat.ID,
