@@ -48,7 +48,7 @@ func main() {
 	})
 
 	// Register callback
-	b.RegisterHandler(bot.HandlerTypeMessageText, "button", bot.MatchTypePrefix, callbackHandler)
+	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, "button", bot.MatchTypePrefix, callbackHandler)
 
 	// Register handlers
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/"+helpCmd.Command, bot.MatchTypeExact, helpHandler)
@@ -63,7 +63,7 @@ func main() {
 	go func() {
 		err = http.ListenAndServe(":21021", b.WebhookHandler())
 		if err != nil {
-			log.Println(err)
+			log.Println("http error:", err)
 		}
 	}()
 
@@ -126,9 +126,9 @@ func inlineKeyboardHandler(ctx context.Context, b *bot.Bot, update *models.Updat
 func helpHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	// FIXME: нет обработки Markdown
 	msg := `*Команды для взаимодействия:*
-_/start_ - начало работы с ботом (происходит запись пользователя в БД),
-_/add-user_ - добавить пользователя (Фамилия Имя Должность Ник_Телеграм)
-_/add-absence_ - добавить новую запись об отсутствии работника (Работник (id?) Код_отсутствия Дата_начала).
+_/start_ начало работы с ботом (происходит запись пользователя в БД),
+_/add-user_ добавить пользователя (Фамилия Имя Должность Ник_Телеграм)
+_/add-absence_ добавить новую запись об отсутствии работника (Работник (id?) Код_отсутствия Дата_начала).
 `
 	res, err := b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID:    update.Message.Chat.ID,
