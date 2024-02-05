@@ -43,7 +43,7 @@ func main() {
 	})
 
 	// Register callback
-	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, "button", bot.MatchTypePrefix, callbackHandler)
+	b.RegisterHandler(bot.HandlerTypeCallbackQueryData, "button", bot.MatchTypePrefix, inlineKeyboardCallback)
 
 	// Register handlers
 	b.RegisterHandler(bot.HandlerTypeMessageText, "/"+helpCmd.Command, bot.MatchTypeExact, helpHandler)
@@ -64,7 +64,7 @@ func main() {
 	b.StartWebhook(ctx)
 }
 
-func callbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+func inlineKeyboardCallback(ctx context.Context, b *bot.Bot, update *models.Update) {
 	// answering callback query first to let Telegram know that we received the callback query,
 	// and we're handling it. Otherwise, Telegram might retry sending the update repetitively
 	// as it thinks the callback query doesn't reach to our application. learn more by
@@ -91,6 +91,17 @@ func callbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		return
 	}
 	log.Println("callback send message:", res)
+
+	res, err = b.EditMessageReplyMarkup(ctx, &bot.EditMessageReplyMarkupParams{
+		ChatID:          update.CallbackQuery.Message.Chat.ID,
+		InlineMessageID: update.CallbackQuery.InlineMessageID,
+		ReplyMarkup:     nil,
+	})
+	if err != nil {
+		log.Println("callback edit message:", err)
+		return
+	}
+	log.Println("callback edit message:", res)
 }
 
 func inlineKeyboardHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
