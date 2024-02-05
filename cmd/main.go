@@ -28,7 +28,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// FIXME: нет списка команд с описанием при вводе '/'
 	addUserCmd := models.BotCommand{
 		Command:     "add_user",
 		Description: "Добавить пользователя",
@@ -54,9 +53,9 @@ func main() {
 	b.RegisterHandler(bot.HandlerTypeMessageText, "button", bot.MatchTypePrefix, callbackHandler)
 
 	// Register handlers
-	b.RegisterHandler(bot.HandlerTypeMessageText, addUserCmd.Command, bot.MatchTypePrefix, addUserHandler)
-	b.RegisterHandler(bot.HandlerTypeMessageText, inlineCmd.Command, bot.MatchTypePrefix, inlineHandler)
-	b.RegisterHandler(bot.HandlerTypeMessageText, inlineKbCmd.Command, bot.MatchTypePrefix, inlineKeyboardHandler)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/"+addUserCmd.Command, bot.MatchTypeExact, addUserHandler)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/"+inlineCmd.Command, bot.MatchTypeExact, inlineHandler)
+	b.RegisterHandler(bot.HandlerTypeMessageText, "/"+inlineKbCmd.Command, bot.MatchTypeExact, inlineKeyboardHandler)
 
 	b.SetWebhook(ctx, &bot.SetWebhookParams{
 		URL: "https://vm-8dae0697.na4u.ru/test-bot",
