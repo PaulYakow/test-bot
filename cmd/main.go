@@ -199,16 +199,26 @@ func addUserHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 func createUser(ctx context.Context, b *bot.Bot, update *models.Update) {
 	newUser.lastname = update.Message.Text
 
+	ok, err := b.DeleteMessage(ctx, &bot.DeleteMessageParams{
+		ChatID:    update.Message.Chat.ID,
+		MessageID: update.Message.ID,
+	})
+	if err != nil {
+		log.Println("createUser delete message error:", err)
+		return
+	}
+	log.Println("createUser delete message:", ok, update.Message.ID)
+
 	msg, err := b.EditMessageText(ctx, &bot.EditMessageTextParams{
 		ChatID:    update.Message.Chat.ID,
 		MessageID: update.Message.ID - 1,
 		Text:      "Введите имя",
 	})
 	if err != nil {
-		log.Println("createUser error:", err)
+		log.Println("createUser edit message error:", err)
 		return
 	}
-	log.Println("createUser:", msg.ID, msg.Text)
+	log.Println("createUser edit message:", msg.ID, msg.Text)
 
 	log.Println("user created:", newUser)
 
