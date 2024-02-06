@@ -157,20 +157,59 @@ type user struct {
 }
 
 var newUser = user{}
+var handlerID string
 
 func addUserHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	msgText := `🗒️<b>Давай создадим нового сотрудника</b>
+Для этого необходимо предоставить следующие данные:
+- фамилия
+- имя
+- отчество
+- дата рождения
+- должность
+- табельный номер`
 	msg, err := b.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID:    update.Message.Chat.ID,
+		Text:      msgText,
+		ParseMode: models.ParseModeHTML,
+	})
+	if err != nil {
+		log.Println("addUser error:", err)
+		return
+	}
+	log.Println("addUser:", msg.ID, msg.Chat.Username)
+
+	handlerID = b.RegisterHandler(bot.HandlerTypeMessageText, "", bot.MatchTypePrefix, createUser)
+
+	msg, err = b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: update.Message.Chat.ID,
-		Text:   "Давай создадим нового сотрудника",
+		Text:   "Введите фамилию",
 		ReplyMarkup: models.ForceReply{
-			ForceReply:            true,
+			ForceReply:            false,
 			InputFieldPlaceholder: "Иванов",
 		},
 	})
 	if err != nil {
-		log.Println("addUser send message error:", err)
+		log.Println("addUser lastname error:", err)
 		return
 	}
+	log.Println("addUser lastname:", msg.ID, msg.Chat.Username)
+}
 
-	log.Println("addUser send message:", msg)
+func createUser(ctx context.Context, b *bot.Bot, update *models.Update) {
+	newUser.lastname = update.Message.Text
+
+	log.Println("user created:", newUser)
+
+	b.UnregisterHandler(handlerID)
+
+	msg, err := b.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID: update.Message.Chat.ID,
+		Text:   "Пользователь создан. Хэндлер удалён.",
+	})
+	if err != nil {
+		log.Println("createUser error:", err)
+		return
+	}
+	log.Println("createUser:", msg.ID, msg.Chat.Username)
 }
