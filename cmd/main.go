@@ -177,7 +177,7 @@ func addUserHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		log.Println("addUser error:", err)
 		return
 	}
-	log.Println("addUser:", msg.ID, msg.Chat.Username)
+	log.Println("addUser:", msg.ID, msg.Text)
 
 	handlerID = b.RegisterHandler(bot.HandlerTypeMessageText, "", bot.MatchTypePrefix, createUser)
 
@@ -185,7 +185,7 @@ func addUserHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		ChatID: update.Message.Chat.ID,
 		Text:   "Введите фамилию",
 		ReplyMarkup: models.ForceReply{
-			ForceReply:            false,
+			ForceReply:            true,
 			InputFieldPlaceholder: "Иванов",
 		},
 	})
@@ -193,7 +193,7 @@ func addUserHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		log.Println("addUser lastname error:", err)
 		return
 	}
-	log.Println("addUser lastname:", msg.ID, msg.Chat.Username)
+	log.Println("addUser lastname:", msg.ID, msg.Text)
 }
 
 func createUser(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -211,5 +211,5 @@ func createUser(ctx context.Context, b *bot.Bot, update *models.Update) {
 		log.Println("createUser error:", err)
 		return
 	}
-	log.Println("createUser:", msg.ID, msg.Chat.Username)
+	log.Println("createUser:", msg.ID, msg.Text)
 }
