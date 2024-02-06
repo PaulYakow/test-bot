@@ -184,10 +184,10 @@ func addUserHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	msg, err = b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: update.Message.Chat.ID,
 		Text:   "Введите фамилию",
-		ReplyMarkup: models.ForceReply{
-			ForceReply:            true,
-			InputFieldPlaceholder: "Иванов",
-		},
+		//ReplyMarkup: models.ForceReply{
+		//	ForceReply:            false,
+		//	InputFieldPlaceholder: "Иванов",
+		//},
 	})
 	if err != nil {
 		log.Println("addUser lastname error:", err)
@@ -199,11 +199,22 @@ func addUserHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 func createUser(ctx context.Context, b *bot.Bot, update *models.Update) {
 	newUser.lastname = update.Message.Text
 
+	msg, err := b.EditMessageText(ctx, &bot.EditMessageTextParams{
+		ChatID:    update.Message.Chat.ID,
+		MessageID: update.Message.ID - 1,
+		Text:      "Введите имя",
+	})
+	if err != nil {
+		log.Println("createUser error:", err)
+		return
+	}
+	log.Println("createUser:", msg.ID, msg.Text)
+
 	log.Println("user created:", newUser)
 
 	b.UnregisterHandler(handlerID)
 
-	msg, err := b.SendMessage(ctx, &bot.SendMessageParams{
+	msg, err = b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: update.Message.Chat.ID,
 		Text:   "Пользователь создан. Хэндлер удалён.",
 	})
