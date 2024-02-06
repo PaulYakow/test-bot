@@ -129,16 +129,16 @@ func inlineKeyboardHandler(ctx context.Context, b *bot.Bot, update *models.Updat
 }
 
 func helpHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
-	// FIXME: нет обработки Markdown
-	msg := `*Команды для взаимодействия:*
-_/start_ начало работы с ботом
-_/add\-user_ добавить пользователя
-_/add\-absence_ добавить новую запись об отсутствии работника
+	// TODO: при добавлении команд необходимо изменять данную функцию - связать с созданием команд и сделать через шаблон
+	msg := `<b>Команды для взаимодействия:</b>
+<i>/start</i> начало работы с ботом
+<i>/add_user</i> добавить пользователя
+<i>/add_absence</i> добавить новую запись об отсутствии работника
 `
 	res, err := b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID:    update.Message.Chat.ID,
 		Text:      msg,
-		ParseMode: "MarkdownV2",
+		ParseMode: models.ParseModeHTML,
 	})
 	if err != nil {
 		log.Println("help send message:", err)
@@ -147,10 +147,30 @@ _/add\-absence_ добавить новую запись об отсутстви
 	log.Println("help send message:", res)
 }
 
+type user struct {
+	lastname      string
+	firstname     string
+	middlename    string
+	birthday      string
+	position      string
+	serviceNumber int
+}
+
+var newUser = user{}
+
 func addUserHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
-	msg := fmt.Sprintf("Пользователь %s", update.Message.Chat.Username)
-	b.SendMessage(ctx, &bot.SendMessageParams{
+	msg, err := b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: update.Message.Chat.ID,
-		Text:   msg,
+		Text:   "Давай создадим нового сотрудника",
+		ReplyMarkup: models.ForceReply{
+			ForceReply:            true,
+			InputFieldPlaceholder: "Иванов",
+		},
 	})
+	if err != nil {
+		log.Println("addUser send message error:", err)
+		return
+	}
+
+	log.Println("addUser send message:", msg)
 }
