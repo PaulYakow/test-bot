@@ -32,6 +32,7 @@ jobs:
       HOST: ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }}
       SSH_PORT: ${{ secrets.SERVER_PORT }}
       IMAGE_ID: ghcr.io/paulyakow/test-bot:latest
+      ENV_FILE_PATH: /srv/.env
     runs-on: ubuntu-latest
     steps:
       - name: Create file with deploy key
@@ -45,5 +46,7 @@ jobs:
         run: |
           ssh -i deploy_key -p $SSH_PORT -o StrictHostKeyChecking=no $HOST "\
           export IMAGE_ID=$IMAGE_ID && \
-          export TG_TOKEN=${{ secrets.TG_TOKEN }} && \
+          echo TG_TOKEN=${{ secrets.TG_TOKEN }} > ${{ env.ENV_FILE_PATH }} && \
+          echo WEBHOOK_URL=${{ secrets.WEBHOOK_URL }} >> ${{ env.ENV_FILE_PATH }} && \
+          echo WEBHOOK_PORT=${{ secrets.WEBHOOK_PORT }} >> ${{ env.ENV_FILE_PATH }} && \
           bash /srv/start.sh"
