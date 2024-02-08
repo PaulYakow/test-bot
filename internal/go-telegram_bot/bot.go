@@ -14,7 +14,7 @@ import (
 )
 
 func Start(ctx context.Context, cfg *config.Config) {
-	b, err := bot.New(os.Getenv(cfg.Token))
+	b, err := bot.New(cfg.Token)
 	if nil != err {
 		log.Println(err)
 		os.Exit(1)
