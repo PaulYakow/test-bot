@@ -3,6 +3,7 @@ module github.com/PaulYakow/test-bot
 go 1.21.6
 
 require (
+	github.com/NicoNex/echotron/v3 v3.28.0
 	github.com/go-telegram/bot v1.0.1
 	github.com/ilyakaznacheev/cleanenv v1.5.0
 	gopkg.in/telebot.v3 v3.2.1

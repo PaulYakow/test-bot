@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/PaulYakow/test-bot/internal/config"
-	bot "github.com/PaulYakow/test-bot/internal/tucnak_telebot"
+	bot "github.com/PaulYakow/test-bot/internal/niconex_echotron"
 )
 
 func Run(ctx context.Context, cfg *config.Config) {
