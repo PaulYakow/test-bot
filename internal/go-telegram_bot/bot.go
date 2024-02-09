@@ -53,7 +53,7 @@ func Start(ctx context.Context, cfg *config.Config) {
 	})
 
 	go func() {
-		err = http.ListenAndServe(cfg.WebhookPort, b.WebhookHandler())
+		err = http.ListenAndServe(":"+cfg.WebhookPort, b.WebhookHandler())
 		if err != nil {
 			log.Println("http error:", err)
 		}
