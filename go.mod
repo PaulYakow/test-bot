@@ -5,6 +5,7 @@ go 1.21.6
 require (
 	github.com/go-telegram/bot v1.0.1
 	github.com/ilyakaznacheev/cleanenv v1.5.0
+	gopkg.in/telebot.v3 v3.2.1
 )
 
 require (

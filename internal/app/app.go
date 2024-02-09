@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/PaulYakow/test-bot/internal/config"
-	bot "github.com/PaulYakow/test-bot/internal/go-telegram_bot"
+	bot "github.com/PaulYakow/test-bot/internal/tucnak_telebot"
 )
 
 func Run(ctx context.Context, cfg *config.Config) {
