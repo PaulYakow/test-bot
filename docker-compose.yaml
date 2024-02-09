@@ -4,6 +4,7 @@ services:
   app:
     container_name: test-bot
     image: ${IMAGE_ID}
+    pull_policy: always
     restart: unless-stopped
     environment:
       TG_TOKEN: ${TG_TOKEN}
