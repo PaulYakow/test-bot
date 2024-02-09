@@ -65,4 +65,5 @@ jobs:
           cd ${{ env.DEPLOY_DIRECTORY }} && \
           docker compose down && \
           docker compose up -d
-          docker image prune"
+          echo y | docker image prune && \
+          docker image ls"
