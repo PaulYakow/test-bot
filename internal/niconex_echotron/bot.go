@@ -28,5 +28,5 @@ func Start(_ context.Context, cfg *config.Config) {
 	}
 
 	dsp := echotron.NewDispatcher(cfg.Token, newBot)
-	dsp.ListenWebhook(cfg.WebhookURL)
+	dsp.ListenWebhook("https://vm-8dae0697.na4u.ru:21021/test-bot")
 }
