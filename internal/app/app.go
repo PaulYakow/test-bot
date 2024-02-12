@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/PaulYakow/test-bot/internal/config"
-	bot "github.com/PaulYakow/test-bot/internal/mymmrac_telego"
+	bot "github.com/PaulYakow/test-bot/internal/fsm-telebot"
 )
 
 func Run(ctx context.Context, cfg *config.Config) {
