@@ -6,6 +6,9 @@ services:
     image: ${IMAGE_ID}
     pull_policy: always
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       TG_TOKEN: ${TG_TOKEN}
       WEBHOOK_URL: ${WEBHOOK_URL}
@@ -18,3 +21,30 @@ services:
         delay: 5s
         max_attempts: 3
         window: 20s
+
+  postgres:
+    image: postgres:16.2-alpine3.19
+    container_name: bot-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${PG_DB}
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    volumes:
+      - test-bot_postgres:/var/lib/postgresql/data
+    ports:
+      - ${PG_PORT}:5432
+    healthcheck:
+      test: ["CMD-SHELL", 'pg_isready -U ${PG_USER} -d ${PG_DB}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 4G
+volumes:
+  test-bot_postgres:

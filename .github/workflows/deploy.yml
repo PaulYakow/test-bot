@@ -1,3 +1,4 @@
+# Deprecated
 name: Manual Deploy
 on:
   workflow_dispatch:
