@@ -22,5 +22,10 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	app.Run(ctx, cfg)
+	if err = app.Run(ctx, cfg); err != nil {
+		slog.Error("app stopped with error", slog.Attr{
+			Key:   "error",
+			Value: slog.StringValue(err.Error()),
+		})
+	}
 }
