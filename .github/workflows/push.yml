@@ -61,6 +61,7 @@ jobs:
           echo PG_USER=${{ secrets.PG_USER }} >> ${{ env.ENV_FILE_PATH }} && \
           echo PG_PASSWORD=${{ secrets.PG_PASSWORD }} >> ${{ env.ENV_FILE_PATH }} && \
           echo PG_PORT=${{ secrets.PG_PORT }} >> ${{ env.ENV_FILE_PATH }} && \
+          echo PG_DSN=${{ secrets.PG_DSN }} >> ${{ env.ENV_FILE_PATH}} && \
           chmod 600 ${{ env.ENV_FILE_PATH }}"
 
       - name: Restart container
