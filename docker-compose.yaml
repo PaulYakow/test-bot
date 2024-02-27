@@ -14,6 +14,8 @@ services:
       WEBHOOK_URL: ${WEBHOOK_URL}
       WEBHOOK_PORT: ${WEBHOOK_PORT}
       PG_DSN: ${PG_DSN}
+    networks:
+      - test-bot_default
     ports:
       - ${WEBHOOK_PORT}:${WEBHOOK_PORT}
     deploy:
@@ -34,6 +36,8 @@ services:
       PGDATA: "/var/lib/postgresql/data/pgdata"
     volumes:
       - test-bot_postgres:/var/lib/postgresql/data
+    networks:
+      - test-bot_default
     ports:
       - ${PG_PORT}:5432
     healthcheck:
@@ -47,5 +51,10 @@ services:
         limits:
           cpus: '1'
           memory: 4G
+
 volumes:
   test-bot_postgres:
+
+networks:
+  test-bot_default:
+    driver: bridge
