@@ -1,12 +1,15 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"time"
 
 	"github.com/vitaliy-ukiru/fsm-telebot"
 	tele "gopkg.in/telebot.v3"
+
+	"github.com/PaulYakow/test-bot/internal/model"
 )
 
 const (
@@ -55,7 +58,7 @@ func (c *controller) registerProcessInit() {
 	c.manager.Bind(tele.OnText, RegisterBirthdayState, registerBirthdayHandler)
 	c.manager.Bind(tele.OnText, RegisterPositionState, registerPositionHandler)
 	c.manager.Bind(tele.OnText, RegisterServiceNumberState, registerServiceNumberHandler)
-	c.manager.Bind(&confirmRegisterBtn, RegisterConfirmState, registerConfirmHandler, editFormMessage("Проверьте", "Введённые"))
+	c.manager.Bind(&confirmRegisterBtn, RegisterConfirmState, c.registerConfirmHandler, editFormMessage("Проверьте", "Введённые"))
 	c.manager.Bind(&resetRegisterBtn, RegisterConfirmState, registerResetHandler, editFormMessage("Проверьте", "Старые"))
 	c.manager.Bind(&cancelRegisterBtn, RegisterConfirmState, cancelRegisterHandler, deleteAfterHandler)
 }
@@ -143,7 +146,7 @@ func registerServiceNumberHandler(tc tele.Context, state fsm.Context) error {
 	return tc.Send(fmt.Sprintf(
 		`<b>Проверьте данные:</b>
 <i>Фамилия</i>: %q
-<i>Имя</i>: %d
+<i>Имя</i>: %q
 <i>Отчество</i>: %q
 <i>Дата рождения</i>: %v
 <i>Должность</i>: %q
@@ -151,33 +154,44 @@ func registerServiceNumberHandler(tc tele.Context, state fsm.Context) error {
 		lastName,
 		firstName,
 		middleName,
-		birthday,
+		birthday.Format(dateLayout),
 		position,
 		serviceNumber,
 	), reply)
 }
 
-func registerConfirmHandler(tc tele.Context, state fsm.Context) error {
+func (c *controller) registerConfirmHandler(tc tele.Context, state fsm.Context) error {
 	defer state.Finish(true)
 
 	var (
-		lastName   string
-		firstName  string
-		middleName string
-		birthday   time.Time
-		position   string
+		lastName      string
+		firstName     string
+		middleName    string
+		birthday      time.Time
+		position      string
+		serviceNumber int
 	)
 	state.MustGet(lastNameKey, &lastName)
 	state.MustGet(firstNameKey, &firstName)
 	state.MustGet(middleNameKey, &middleName)
 	state.MustGet(birthdayKey, &birthday)
 	state.MustGet(positionKey, &position)
+	state.MustGet(serviceNumberKey, &serviceNumber)
 
-	// TODO: добавить сохранение в БД
-	//if err != nil {
-	//	tc.Bot().OnError(err, tc)
-	//}
-	return tc.Send("Данные приняты", tele.RemoveKeyboard)
+	id, err := c.us.AddUser(context.Background(), model.User{
+		LastName:      lastName,
+		FirstName:     firstName,
+		MiddleName:    middleName,
+		Birthday:      birthday.Format(dateLayout),
+		Position:      position,
+		ServiceNumber: serviceNumber,
+	})
+	if err != nil {
+		tc.Bot().OnError(err, tc)
+		return tc.Send(fmt.Sprintf("Ошибка сохранения: %v", err))
+	}
+
+	return tc.Send(fmt.Sprintf("Данные приняты. ID нового сотрудника: %d", id), tele.RemoveKeyboard)
 }
 
 func registerResetHandler(tc tele.Context, state fsm.Context) error {
