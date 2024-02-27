@@ -15,7 +15,7 @@ services:
       WEBHOOK_PORT: ${WEBHOOK_PORT}
       PG_DSN: ${PG_DSN}
     networks:
-      - test-bot_default
+      - backend
     ports:
       - ${WEBHOOK_PORT}:${WEBHOOK_PORT}
     deploy:
@@ -37,7 +37,7 @@ services:
     volumes:
       - test-bot_postgres:/var/lib/postgresql/data
     networks:
-      - test-bot_default
+      - backend
     ports:
       - ${PG_PORT}:5432
     healthcheck:
@@ -56,5 +56,5 @@ volumes:
   test-bot_postgres:
 
 networks:
-  test-bot_default:
+  backend:
     driver: bridge
