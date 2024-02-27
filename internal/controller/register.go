@@ -13,7 +13,8 @@ import (
 )
 
 const (
-	dateLayout       = "02.01.2006"
+	dateLayout = "02.01.2006"
+	//TODO: задать более конкретные имена для ключей (чтобы было видно с каким процессом они связаны)
 	lastNameKey      = "last_name"
 	firstNameKey     = "first_name"
 	middleNameKey    = "middle_name"
@@ -23,27 +24,17 @@ const (
 )
 
 var (
-	// RegisterSG - группа состояний reg (префикс). Хранит состояния для регистрации пользователя.
-	RegisterSG = fsm.NewStateGroup("reg")
+	// registerSG - группа состояний reg (префикс). Хранит состояния для регистрации пользователя.
+	registerSG = fsm.NewStateGroup("reg")
 
 	// Последовательность состояний процесса регистрации пользователя
-
-	RegisterLastNameState      = RegisterSG.New(lastNameKey)
-	RegisterFirstNameState     = RegisterSG.New(firstNameKey)
-	RegisterMiddleNameState    = RegisterSG.New(middleNameKey)
-	RegisterBirthdayState      = RegisterSG.New(birthdayKey)
-	RegisterPositionState      = RegisterSG.New(positionKey)
-	RegisterServiceNumberState = RegisterSG.New(serviceNumberKey)
-	RegisterConfirmState       = RegisterSG.New("confirm")
-
-	// Кнопки общие для всего процесса (запуск, отмена на любом шаге)
-	//regBtn    = tele.Btn{Text: "📝 Начать добавление пользователя"}
-	cancelBtn = tele.Btn{Text: "❌ Отменить добавление пользователя"}
-
-	// Кнопки при завершении процесса регистрации
-	confirmRegisterBtn = tele.Btn{Text: "✅ Подтвердить и отправить", Unique: "confirm"}
-	resetRegisterBtn   = tele.Btn{Text: "🔄 Сбросить", Unique: "reset"}
-	cancelRegisterBtn  = tele.Btn{Text: "❌ Отменить", Unique: "cancel"}
+	registerLastNameState      = registerSG.New(lastNameKey)
+	registerFirstNameState     = registerSG.New(firstNameKey)
+	registerMiddleNameState    = registerSG.New(middleNameKey)
+	registerBirthdayState      = registerSG.New(birthdayKey)
+	registerPositionState      = registerSG.New(positionKey)
+	registerServiceNumberState = registerSG.New(serviceNumberKey)
+	registerConfirmState       = registerSG.New("confirm")
 )
 
 func (c *controller) registerProcessInit() {
@@ -52,15 +43,15 @@ func (c *controller) registerProcessInit() {
 	c.manager.Bind(&cancelBtn, fsm.AnyState, cancelRegisterHandler)
 
 	// User add process
-	c.manager.Bind(tele.OnText, RegisterLastNameState, registerLastNameHandler)
-	c.manager.Bind(tele.OnText, RegisterFirstNameState, registerFirstNameHandler)
-	c.manager.Bind(tele.OnText, RegisterMiddleNameState, registerMiddleNameHandler)
-	c.manager.Bind(tele.OnText, RegisterBirthdayState, registerBirthdayHandler)
-	c.manager.Bind(tele.OnText, RegisterPositionState, registerPositionHandler)
-	c.manager.Bind(tele.OnText, RegisterServiceNumberState, registerServiceNumberHandler)
-	c.manager.Bind(&confirmRegisterBtn, RegisterConfirmState, c.registerConfirmHandler, editFormMessage("Проверьте", "Введённые"))
-	c.manager.Bind(&resetRegisterBtn, RegisterConfirmState, registerResetHandler, editFormMessage("Проверьте", "Старые"))
-	c.manager.Bind(&cancelRegisterBtn, RegisterConfirmState, cancelRegisterHandler, deleteAfterHandler)
+	c.manager.Bind(tele.OnText, registerLastNameState, registerLastNameHandler)
+	c.manager.Bind(tele.OnText, registerFirstNameState, registerFirstNameHandler)
+	c.manager.Bind(tele.OnText, registerMiddleNameState, registerMiddleNameHandler)
+	c.manager.Bind(tele.OnText, registerBirthdayState, registerBirthdayHandler)
+	c.manager.Bind(tele.OnText, registerPositionState, registerPositionHandler)
+	c.manager.Bind(tele.OnText, registerServiceNumberState, registerServiceNumberHandler)
+	c.manager.Bind(&confirmRegisterBtn, registerConfirmState, c.registerConfirmHandler, editFormMessage("Проверьте", "Введённые"))
+	c.manager.Bind(&resetRegisterBtn, registerConfirmState, registerResetHandler, editFormMessage("Проверьте", "Старые"))
+	c.manager.Bind(&cancelRegisterBtn, registerConfirmState, cancelRegisterHandler, deleteAfterHandler)
 }
 
 func startRegisterHandler(tc tele.Context, state fsm.Context) error {
@@ -68,7 +59,7 @@ func startRegisterHandler(tc tele.Context, state fsm.Context) error {
 	menu.Reply(menu.Row(cancelBtn))
 	menu.ResizeKeyboard = true
 
-	fmt.Println("start handler:", state.Set(RegisterLastNameState))
+	state.Set(registerLastNameState)
 	return tc.Send("Введите фамилию сотрудника", menu)
 }
 
@@ -76,7 +67,7 @@ func registerLastNameHandler(tc tele.Context, state fsm.Context) error {
 	input := tc.Message().Text
 	go state.Update(lastNameKey, input)
 
-	go fmt.Println("last_name handler:", state.Set(RegisterFirstNameState))
+	go state.Set(registerFirstNameState)
 	return tc.Send("Введите имя сотрудника")
 }
 
@@ -84,7 +75,7 @@ func registerFirstNameHandler(tc tele.Context, state fsm.Context) error {
 	input := tc.Message().Text
 	go state.Update(firstNameKey, input)
 
-	go fmt.Println("first_name handler:", state.Set(RegisterMiddleNameState))
+	go state.Set(registerMiddleNameState)
 	return tc.Send("Введите отчество сотрудника")
 }
 
@@ -92,7 +83,7 @@ func registerMiddleNameHandler(tc tele.Context, state fsm.Context) error {
 	input := tc.Message().Text
 	go state.Update(middleNameKey, input)
 
-	go fmt.Println("middle_name handler:", state.Set(RegisterBirthdayState))
+	go state.Set(registerBirthdayState)
 	return tc.Send("Введите дату рождения сотрудника в формате ДД.ММ.ГГГГ (например, 01.01.2001)")
 }
 
@@ -103,7 +94,7 @@ func registerBirthdayHandler(tc tele.Context, state fsm.Context) error {
 	}
 	go state.Update(birthdayKey, input)
 
-	go state.Set(RegisterPositionState)
+	go state.Set(registerPositionState)
 	return tc.Send("Введите должность сотрудника")
 }
 
@@ -111,7 +102,7 @@ func registerPositionHandler(tc tele.Context, state fsm.Context) error {
 	input := tc.Message().Text
 	go state.Update(positionKey, input)
 
-	go state.Set(RegisterServiceNumberState)
+	go state.Set(registerServiceNumberState)
 	return tc.Send("Введите табельный номер сотрудника")
 }
 
@@ -122,7 +113,7 @@ func registerServiceNumberHandler(tc tele.Context, state fsm.Context) error {
 	}
 	go state.Update(serviceNumberKey, serviceNumber)
 
-	go state.Set(RegisterConfirmState)
+	go state.Set(registerConfirmState)
 
 	reply := &tele.ReplyMarkup{}
 	reply.Inline(
@@ -195,7 +186,7 @@ func (c *controller) registerConfirmHandler(tc tele.Context, state fsm.Context) 
 }
 
 func registerResetHandler(tc tele.Context, state fsm.Context) error {
-	go state.Set(RegisterLastNameState)
+	go state.Set(registerLastNameState)
 	return tc.Send(`Начнём заново.
 Введите фамилию сотрудника.
 `)

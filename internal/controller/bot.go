@@ -16,6 +16,17 @@ import (
 
 const SuperuserId tele.ChatID = 384688499 // TODO: move to config
 
+var (
+	// Кнопки общие для всех процессов
+	//regBtn    = tele.Btn{Text: "📝 Начать добавление пользователя"}
+	cancelBtn = tele.Btn{Text: "❌ Отменить операцию"}
+
+	// Кнопки (inline) при завершении процессов
+	confirmRegisterBtn = tele.Btn{Text: "✅ Подтвердить и отправить", Unique: "confirm"}
+	resetRegisterBtn   = tele.Btn{Text: "🔄 Сбросить", Unique: "reset"}
+	cancelRegisterBtn  = tele.Btn{Text: "❌ Отменить", Unique: "cancel"}
+)
+
 type controller struct {
 	bot     *tele.Bot
 	manager *fsm.Manager
@@ -59,11 +70,31 @@ func (c *controller) Start() {
 
 	c.bot.Use(middleware.AutoRespond())
 
-	// TODO: set list of the bot's commands	(bot.SetCommands)
+	helpCmd := tele.Command{
+		Text:        "help",
+		Description: "Узнать подробности",
+	}
+	regCmd := tele.Command{
+		Text:        "reg",
+		Description: "Добавить сотрудника",
+	}
+
+	addAbsenceCmd := tele.Command{
+		Text:        "add_absence",
+		Description: "Добавить сотрудника",
+	}
+
+	err := c.bot.SetCommands([]tele.Command{
+		helpCmd,
+		regCmd,
+		addAbsenceCmd,
+	})
+	log.Println(fmt.Sprintf("%s: %v", op, err))
 
 	// Commands
-	c.bot.Handle("/start", startHandler)
-	c.manager.Bind("/reg", fsm.DefaultState, startRegisterHandler)
+	c.bot.Handle("/"+helpCmd.Text, helpHandler)
+	c.manager.Bind("/"+regCmd.Text, fsm.DefaultState, startRegisterHandler)
+	c.manager.Bind("/"+addAbsenceCmd.Text, fsm.DefaultState, startAbsenceHandler)
 	c.manager.Bind("/cancel", fsm.AnyState, cancelRegisterHandler)
 
 	c.manager.Bind("/state", fsm.AnyState, func(c tele.Context, state fsm.Context) error {
@@ -75,15 +106,17 @@ func (c *controller) Start() {
 	})
 
 	c.registerProcessInit()
+	c.absenceProcessInit()
 
 	log.Println("Handlers configured")
 
 	c.bot.Start()
 }
 
-func startHandler(tc tele.Context) error {
+func helpHandler(tc tele.Context) error {
 	msg := `<b>Доступные команды:</b>
 /reg - запуск процесса добавления нового сотрудника
+/add_absence - запуск процесса добавления причины отсутствия
 /cancel - отмена на любом шаге`
 	return tc.Send(msg)
 }
@@ -95,12 +128,15 @@ func editFormMessage(old, new string) tele.MiddlewareFunc {
 			if nLen := utf8.RuneCountInString(new); nLen > 1 {
 				strOffset -= nLen - 1
 			}
+			fmt.Printf("edit message: strOffset=%d\n", strOffset)
 
 			entities := make(tele.Entities, len(c.Message().Entities))
 			for i, entity := range c.Message().Entities {
 				entity.Offset -= strOffset
 				entities[i] = entity
 			}
+			fmt.Printf("edit message: entities=%v\n", entities)
+
 			defer func() {
 				err := c.EditOrSend(strings.Replace(c.Message().Text, old, new, 1), entities)
 				if err != nil {
