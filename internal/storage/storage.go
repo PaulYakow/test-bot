@@ -19,7 +19,7 @@ type storage struct {
 }
 
 func New(ctx context.Context, cfg Config) (*storage, error) {
-	const op = "storage: new"
+	const op = "storage new"
 
 	pool, err := pg.New(ctx, cfg.DSN,
 		pg.ConnAttempts(cfg.ConnAttempts),
@@ -28,23 +28,19 @@ func New(ctx context.Context, cfg Config) (*storage, error) {
 		pg.MaxConnIdleTime(cfg.MaxConnIdleTime),
 		pg.MaxConnLifeTime(cfg.MaxConnLifeTime))
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+		return nil, fmt.Errorf("%s (create pool): %w", op, err)
 	}
 
 	goose.SetBaseFS(embedMigrations)
 
-	if err = goose.SetDialect("postgres"); err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-
 	sql, err := goose.OpenDBWithDriver("pgx", cfg.DSN)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+		return nil, fmt.Errorf("%s (goose create connection): %w", op, err)
 	}
 	defer sql.Close()
 
 	if err = goose.Up(sql, "migrations"); err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+		return nil, fmt.Errorf("%s (goose up): %w", op, err)
 	}
 
 	return &storage{
