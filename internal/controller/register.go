@@ -65,7 +65,7 @@ func startRegisterHandler(tc tele.Context, state fsm.Context) error {
 	menu.Reply(menu.Row(cancelBtn))
 	menu.ResizeKeyboard = true
 
-	state.Set(RegisterLastNameState)
+	fmt.Println("start handler:", state.Set(RegisterLastNameState))
 	return tc.Send("Введите фамилию сотрудника", menu)
 }
 
@@ -73,7 +73,7 @@ func registerLastNameHandler(tc tele.Context, state fsm.Context) error {
 	input := tc.Message().Text
 	go state.Update(lastNameKey, input)
 
-	go state.Set(RegisterFirstNameState)
+	go fmt.Println("last_name handler:", state.Set(RegisterFirstNameState))
 	return tc.Send("Введите имя сотрудника")
 }
 
@@ -81,7 +81,7 @@ func registerFirstNameHandler(tc tele.Context, state fsm.Context) error {
 	input := tc.Message().Text
 	go state.Update(firstNameKey, input)
 
-	go state.Set(RegisterMiddleNameState)
+	go fmt.Println("first_name handler:", state.Set(RegisterMiddleNameState))
 	return tc.Send("Введите отчество сотрудника")
 }
 
@@ -89,7 +89,7 @@ func registerMiddleNameHandler(tc tele.Context, state fsm.Context) error {
 	input := tc.Message().Text
 	go state.Update(middleNameKey, input)
 
-	go state.Set(RegisterBirthdayState)
+	go fmt.Println("middle_name handler:", state.Set(RegisterBirthdayState))
 	return tc.Send("Введите дату рождения сотрудника в формате ДД.ММ.ГГГГ (например, 01.01.2001)")
 }
 

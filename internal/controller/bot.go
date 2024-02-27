@@ -19,7 +19,6 @@ const SuperuserId tele.ChatID = 384688499 // TODO: move to config
 type controller struct {
 	bot     *tele.Bot
 	manager *fsm.Manager
-	storage fsm.Storage
 	us      UserService
 }
 
@@ -51,7 +50,6 @@ func New(cfg *config.Config, us UserService) (*controller, error) {
 	return &controller{
 		bot:     bot,
 		manager: manager,
-		storage: storage,
 		us:      us,
 	}, nil
 }
@@ -75,6 +73,8 @@ func (c *controller) Start() {
 		}
 		return c.Send(s.GoString())
 	})
+
+	c.registerProcessInit()
 
 	log.Println("Handlers configured")
 
