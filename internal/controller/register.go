@@ -65,13 +65,14 @@ func startRegisterHandler(tc tele.Context, state fsm.Context) error {
 	menu.Reply(menu.Row(cancelBtn))
 	menu.ResizeKeyboard = true
 
-	state.Set(RegisterFirstNameState)
+	state.Set(RegisterLastNameState)
 	return tc.Send("Введите фамилию сотрудника", menu)
 }
 
 func registerLastNameHandler(tc tele.Context, state fsm.Context) error {
 	input := tc.Message().Text
 	go state.Update(lastNameKey, input)
+
 	go state.Set(RegisterFirstNameState)
 	return tc.Send("Введите имя сотрудника")
 }
@@ -79,6 +80,7 @@ func registerLastNameHandler(tc tele.Context, state fsm.Context) error {
 func registerFirstNameHandler(tc tele.Context, state fsm.Context) error {
 	input := tc.Message().Text
 	go state.Update(firstNameKey, input)
+
 	go state.Set(RegisterMiddleNameState)
 	return tc.Send("Введите отчество сотрудника")
 }
@@ -86,6 +88,7 @@ func registerFirstNameHandler(tc tele.Context, state fsm.Context) error {
 func registerMiddleNameHandler(tc tele.Context, state fsm.Context) error {
 	input := tc.Message().Text
 	go state.Update(middleNameKey, input)
+
 	go state.Set(RegisterBirthdayState)
 	return tc.Send("Введите дату рождения сотрудника в формате ДД.ММ.ГГГГ (например, 01.01.2001)")
 }
@@ -95,18 +98,17 @@ func registerBirthdayHandler(tc tele.Context, state fsm.Context) error {
 	if err != nil {
 		return tc.Send("Дата должна иметь формат ДД.ММ.ГГГГ (например, 01.01.2001)")
 	}
-
 	go state.Update(birthdayKey, input)
-	go state.Set(RegisterPositionState)
 
+	go state.Set(RegisterPositionState)
 	return tc.Send("Введите должность сотрудника")
 }
 
 func registerPositionHandler(tc tele.Context, state fsm.Context) error {
 	input := tc.Message().Text
 	go state.Update(positionKey, input)
-	go state.Set(RegisterServiceNumberState)
 
+	go state.Set(RegisterServiceNumberState)
 	return tc.Send("Введите табельный номер сотрудника")
 }
 
@@ -115,8 +117,8 @@ func registerServiceNumberHandler(tc tele.Context, state fsm.Context) error {
 	if err != nil || serviceNumber <= 0 {
 		return tc.Send("Некорректный номер. Попробуйте ещё раз.")
 	}
-
 	go state.Update(serviceNumberKey, serviceNumber)
+
 	go state.Set(RegisterConfirmState)
 
 	reply := &tele.ReplyMarkup{}
