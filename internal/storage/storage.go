@@ -4,8 +4,9 @@ import (
 	"context"
 	"embed"
 	"fmt"
+	"log"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
 
 	pg "github.com/PaulYakow/test-bot/pkg/postgresql"
@@ -33,14 +34,23 @@ func New(ctx context.Context, cfg Config) (*storage, error) {
 
 	goose.SetBaseFS(embedMigrations)
 
-	sql, err := goose.OpenDBWithDriver("pgx", cfg.DSN)
-	if err != nil {
-		return nil, fmt.Errorf("%s (goose create connection): %w", op, err)
+	if err = goose.SetDialect("postgres"); err != nil {
+		return nil, fmt.Errorf("%s (goose set dialect): %w", op, err)
 	}
-	defer sql.Close()
 
-	if err = goose.Up(sql, "migrations"); err != nil {
+	db := stdlib.OpenDBFromPool(pool.Pool)
+	status := "up"
+	if err = db.PingContext(ctx); err != nil {
+		status = "down"
+	}
+	log.Println(fmt.Sprintf("%s (open db from pool): %s", op, status))
+
+	if err = goose.Up(db, "migrations"); err != nil {
 		return nil, fmt.Errorf("%s (goose up): %w", op, err)
+	}
+
+	if err = db.Close(); err != nil {
+		return nil, fmt.Errorf("%s (db close): %w", op, err)
 	}
 
 	return &storage{
