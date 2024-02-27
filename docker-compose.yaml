@@ -13,6 +13,7 @@ services:
       TG_TOKEN: ${TG_TOKEN}
       WEBHOOK_URL: ${WEBHOOK_URL}
       WEBHOOK_PORT: ${WEBHOOK_PORT}
+      PG_DSN: ${PG_DSN}
     ports:
       - ${WEBHOOK_PORT}:${WEBHOOK_PORT}
     deploy:

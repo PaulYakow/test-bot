@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+
 	"github.com/ilyakaznacheev/cleanenv"
 
 	"github.com/PaulYakow/test-bot/internal/storage"
@@ -15,11 +17,13 @@ type Config struct {
 
 // New создаёт объект Config.
 func New() (*Config, error) {
+	const op = "config new"
+
 	cfg := &Config{}
 
 	err := cleanenv.ReadEnv(cfg)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return cfg, nil
