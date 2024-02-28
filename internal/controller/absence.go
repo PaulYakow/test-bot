@@ -66,9 +66,10 @@ func startAbsenceHandler(tc tele.Context, state fsm.Context) error {
 	rm := &tele.ReplyMarkup{}
 	rm.Inline(
 		rm.Row(absenceAddRecordBtn),
-		rm.Row(absenceEditRecordBtn))
+		rm.Row(absenceEditRecordBtn),
+	)
 
-	rm.Reply(rm.Row(cancelProcessBtn))
+	//rm.Reply(rm.Row(cancelProcessBtn))
 	rm.ResizeKeyboard = true
 
 	state.Set(absenceSelectActionState)
