@@ -1,6 +1,10 @@
 package storage
 
-import "github.com/PaulYakow/test-bot/internal/model"
+import (
+	"strconv"
+
+	"github.com/PaulYakow/test-bot/internal/model"
+)
 
 type user struct {
 	ID            uint64 `db:"id"`
@@ -21,5 +25,17 @@ func convertModelUserToUser(mu *model.User) user {
 		Birthday:      mu.Birthday,
 		Position:      mu.Position,
 		ServiceNumber: mu.ServiceNumber,
+	}
+}
+
+type userInfo struct {
+	ID          uint64 `db:"id"`
+	Description string `db:"description"`
+}
+
+func convertUserInfoToModel(ui userInfo) model.UserInfo {
+	return model.UserInfo{
+		ID:          strconv.FormatUint(ui.ID, 10),
+		Description: ui.Description,
 	}
 }

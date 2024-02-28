@@ -3,12 +3,10 @@ package storage
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/jackc/pgx/v5"
 
 	"github.com/PaulYakow/test-bot/internal/model"
-	"github.com/PaulYakow/test-bot/pkg/repoerr"
 )
 
 func (s *storage) Create(ctx context.Context, mu model.User) (uint64, error) {
@@ -32,16 +30,72 @@ func (s *storage) Create(ctx context.Context, mu model.User) (uint64, error) {
 		})
 
 	if err := row.Scan(&u.ID); err != nil {
-		if strings.Contains(err.Error(), "23") { // Integrity Constraint Violation
-			if strings.Contains(err.Error(), "department_id") {
-				return 0, fmt.Errorf("the department does not exist: %w", repoerr.ErrConflict)
-			}
-			if strings.Contains(err.Error(), "passport_id") {
-				return 0, fmt.Errorf("the position does not exist: %w", repoerr.ErrConflict)
-			}
-		}
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return u.ID, nil
+}
+
+func (s *storage) CountUsersByLastName(ctx context.Context, lastName string) (int, error) {
+	const op = "user storage: count users by last name"
+
+	row := s.Pool.QueryRow(ctx,
+		`SELECT COUNT(*)
+			FROM users
+			WHERE last_name ILIKE '@last_name%'`,
+		pgx.NamedArgs{"last_name": lastName},
+	)
+
+	var count int
+	if err := row.Scan(&count); err != nil {
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return count, nil
+}
+
+func (s *storage) UserIDByLastName(ctx context.Context, lastName string) (uint64, error) {
+	const op = "user storage: user id by last name"
+
+	row := s.Pool.QueryRow(ctx,
+		`SELECT id
+			FROM users
+			WHERE last_name ILIKE '@last_name%';`,
+		pgx.NamedArgs{"last_name": lastName},
+	)
+
+	var id uint64
+	if err := row.Scan(&id); err != nil {
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return id, nil
+}
+
+func (s *storage) ListUsersByLastName(ctx context.Context, lastName string) ([]model.UserInfo, error) {
+	const op = "user storage: list users by last name"
+
+	rows, err := s.Pool.Query(ctx,
+		`SELECT id,
+       				format('%s %s.%s. (%s)', last_name, LEFT(first_name, 1), LEFT(middle_name, 1), service_number) AS description
+			FROM users
+			WHERE last_name ILIKE '@last_name%';`,
+		pgx.NamedArgs{"last_name": lastName},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	defer rows.Close()
+
+	uis, err := pgx.CollectRows[userInfo](rows, pgx.RowToStructByNameLax[userInfo])
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	infos := make([]model.UserInfo, len(uis))
+	for i, ui := range uis {
+		infos[i] = convertUserInfoToModel(ui)
+	}
+
+	return infos, nil
 }

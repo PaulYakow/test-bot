@@ -13,8 +13,6 @@ import (
 )
 
 const (
-	dateLayout = "02.01.2006"
-	//TODO: задать более конкретные имена для ключей (чтобы было видно с каким процессом они связаны)
 	lastNameKey      = "last_name"
 	firstNameKey     = "first_name"
 	middleNameKey    = "middle_name"
@@ -38,10 +36,6 @@ var (
 )
 
 func (c *controller) registerProcessInit() {
-	// Buttons
-	//c.manager.Bind(&regBtn, fsm.DefaultState, StartRegisterHandler)
-	c.manager.Bind(&cancelBtn, fsm.AnyState, cancelRegisterHandler)
-
 	// User add process
 	c.manager.Bind(tele.OnText, registerLastNameState, registerLastNameHandler)
 	c.manager.Bind(tele.OnText, registerFirstNameState, registerFirstNameHandler)
@@ -49,14 +43,14 @@ func (c *controller) registerProcessInit() {
 	c.manager.Bind(tele.OnText, registerBirthdayState, registerBirthdayHandler)
 	c.manager.Bind(tele.OnText, registerPositionState, registerPositionHandler)
 	c.manager.Bind(tele.OnText, registerServiceNumberState, registerServiceNumberHandler)
-	c.manager.Bind(&confirmRegisterBtn, registerConfirmState, c.registerConfirmHandler, editFormMessage("Проверьте", "Введённые"))
-	c.manager.Bind(&resetRegisterBtn, registerConfirmState, registerResetHandler, editFormMessage("Проверьте", "Старые"))
-	c.manager.Bind(&cancelRegisterBtn, registerConfirmState, cancelRegisterHandler, deleteAfterHandler)
+	c.manager.Bind(&confirmBtn, registerConfirmState, c.registerConfirmHandler, editFormMessage("Проверьте", "Введённые"))
+	c.manager.Bind(&resetBtn, registerConfirmState, registerResetHandler, editFormMessage("Проверьте", "Старые"))
+	c.manager.Bind(&cancelBtn, registerConfirmState, cancelHandler, deleteAfterHandler)
 }
 
 func startRegisterHandler(tc tele.Context, state fsm.Context) error {
 	menu := &tele.ReplyMarkup{}
-	menu.Reply(menu.Row(cancelBtn))
+	menu.Reply(menu.Row(cancelProcessBtn))
 	menu.ResizeKeyboard = true
 
 	state.Set(registerLastNameState)
@@ -117,8 +111,8 @@ func registerServiceNumberHandler(tc tele.Context, state fsm.Context) error {
 
 	reply := &tele.ReplyMarkup{}
 	reply.Inline(
-		reply.Row(confirmRegisterBtn),
-		reply.Row(resetRegisterBtn, cancelRegisterBtn),
+		reply.Row(confirmBtn),
+		reply.Row(resetBtn, cancelBtn),
 	)
 
 	var (
@@ -190,13 +184,4 @@ func registerResetHandler(tc tele.Context, state fsm.Context) error {
 	return tc.Send(`Начнём заново.
 Введите фамилию сотрудника.
 `)
-}
-
-func cancelRegisterHandler(tc tele.Context, state fsm.Context) error {
-	//menu := &tele.ReplyMarkup{}
-	//menu.Reply(menu.Row(regBtn))
-	//menu.ResizeKeyboard = true
-
-	go state.Finish(true)
-	return tc.Send("Процесс добавления отменён. Введённые данные удалены.")
 }

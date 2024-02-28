@@ -9,3 +9,8 @@ type User struct {
 	Position      string
 	ServiceNumber int
 }
+
+type UserInfo struct {
+	ID          string
+	Description string
+}

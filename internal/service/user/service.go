@@ -1,11 +1,11 @@
 package user
 
-type service struct {
+type Service struct {
 	userStorage userStorage
 }
 
-func New(us userStorage) *service {
-	return &service{
+func New(us userStorage) *Service {
+	return &Service{
 		userStorage: us,
 	}
 }

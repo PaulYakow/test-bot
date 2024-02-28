@@ -14,17 +14,18 @@ import (
 	"github.com/PaulYakow/test-bot/internal/config"
 )
 
-const SuperuserId tele.ChatID = 384688499 // TODO: move to config
+const (
+	dateLayout = "02.01.2006"
+)
 
 var (
 	// Кнопки общие для всех процессов
-	//regBtn    = tele.Btn{Text: "📝 Начать добавление пользователя"}
-	cancelBtn = tele.Btn{Text: "❌ Отменить операцию"}
+	cancelProcessBtn = tele.Btn{Text: "❌ Отменить операцию"}
 
 	// Кнопки (inline) при завершении процессов
-	confirmRegisterBtn = tele.Btn{Text: "✅ Подтвердить и отправить", Unique: "confirm"}
-	resetRegisterBtn   = tele.Btn{Text: "🔄 Сбросить", Unique: "reset"}
-	cancelRegisterBtn  = tele.Btn{Text: "❌ Отменить", Unique: "cancel"}
+	confirmBtn = tele.Btn{Text: "✅ Подтвердить и сохранить", Unique: "confirm"}
+	resetBtn   = tele.Btn{Text: "🔄 Сбросить", Unique: "reset"}
+	cancelBtn  = tele.Btn{Text: "❌ Отменить", Unique: "cancel"}
 )
 
 type controller struct {
@@ -76,26 +77,34 @@ func (c *controller) Start() {
 	}
 	regCmd := tele.Command{
 		Text:        "reg",
-		Description: "Добавить сотрудника",
+		Description: "Добавить нового сотрудника",
 	}
 
 	addAbsenceCmd := tele.Command{
 		Text:        "add_absence",
-		Description: "Добавить сотрудника",
+		Description: "Добавить причину неявки сотрудника",
+	}
+
+	testCmd := tele.Command{
+		Text:        "test",
+		Description: "Для тестов функционала",
 	}
 
 	err := c.bot.SetCommands([]tele.Command{
 		helpCmd,
 		regCmd,
 		addAbsenceCmd,
+		testCmd,
 	})
 	log.Println(fmt.Sprintf("%s: %v", op, err))
 
 	// Commands
 	c.bot.Handle("/"+helpCmd.Text, helpHandler)
+	c.bot.Handle("/"+testCmd.Text, testHandler)
 	c.manager.Bind("/"+regCmd.Text, fsm.DefaultState, startRegisterHandler)
 	c.manager.Bind("/"+addAbsenceCmd.Text, fsm.DefaultState, startAbsenceHandler)
-	c.manager.Bind("/cancel", fsm.AnyState, cancelRegisterHandler)
+	c.manager.Bind("/cancel", fsm.AnyState, cancelHandler)
+	c.manager.Bind(&cancelProcessBtn, fsm.AnyState, cancelHandler)
 
 	c.manager.Bind("/state", fsm.AnyState, func(c tele.Context, state fsm.Context) error {
 		s, err := state.State()
@@ -119,6 +128,11 @@ func helpHandler(tc tele.Context) error {
 /add_absence - запуск процесса добавления причины отсутствия
 /cancel - отмена на любом шаге`
 	return tc.Send(msg)
+}
+
+func cancelHandler(tc tele.Context, state fsm.Context) error {
+	go state.Finish(true)
+	return tc.Send("Процесс добавления отменён. Введённые данные удалены.")
 }
 
 func editFormMessage(old, new string) tele.MiddlewareFunc {
