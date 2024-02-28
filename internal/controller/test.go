@@ -30,16 +30,16 @@ func testHandler(tc tele.Context) error {
 	}
 
 	inline := &tele.ReplyMarkup{}
-	for _, info := range testInfo {
-		inline.Inline(
-			inline.Row(tele.Btn{
-				Text:   info.Description,
-				Data:   info.ID,
-				Unique: "test_btn",
-			}),
-		)
+	rows := make([]tele.Row, len(testInfo))
+	for i, info := range testInfo {
+		rows[i] = inline.Row(tele.Btn{
+			Text:   info.Description,
+			Data:   info.ID,
+			Unique: "test_btn",
+		})
 	}
 
+	inline.Inline(rows...)
 	inline.ResizeKeyboard = true
 
 	return tc.Send(msg, inline)
