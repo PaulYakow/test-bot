@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/jackc/pgx/v5"
 
@@ -39,6 +40,7 @@ func (s *storage) Create(ctx context.Context, mu model.User) (uint64, error) {
 func (s *storage) CountUsersByLastName(ctx context.Context, lastName string) (int, error) {
 	const op = "user storage: count users by last name"
 
+	log.Println(fmt.Sprintf("%s input: %s", op, lastName))
 	row := s.Pool.QueryRow(ctx,
 		`SELECT COUNT(*)
 			FROM users

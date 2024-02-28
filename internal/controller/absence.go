@@ -105,7 +105,7 @@ func (c *controller) absenceInputUserHandler(tc tele.Context, state fsm.Context)
 	switch count {
 	case 0:
 		go state.Set(absenceNoUserState)
-		return tc.Send("Сотрудников с заданной фамилией не найдено")
+		return tc.Send(fmt.Sprintf("Сотрудников с фамилией (либо частью фамилии) %q не найдено", input))
 	case 1:
 		id, err := c.us.UserIDWithLastName(context.Background(), input)
 		if err != nil {
