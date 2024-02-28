@@ -21,9 +21,9 @@ date_end date - может заполняться позже (предусмот
 */
 
 var (
-	absenceAddRecordBtn  = tele.Btn{Text: "🆕 Добавить новую запись"}
-	absenceEditRecordBtn = tele.Btn{Text: "📝 Обновить существующую запись"}
-	absenceSkipEndBtn    = tele.Btn{Text: "↪️ Пропустить", Unique: "skip"}
+	absenceAddRecordBtn  = tele.Btn{Text: "🆕 Добавить новую запись", Unique: "absence_add_record"}
+	absenceEditRecordBtn = tele.Btn{Text: "📝 Обновить существующую запись", Unique: "absence_edit_record"}
+	absenceSkipEndBtn    = tele.Btn{Text: "↪️ Пропустить", Unique: "absence_skip_end"}
 
 	// absenceSG - группа состояний absence (префикс). Хранит состояния для добавления причины отсутствия работника.
 	absenceSG = fsm.NewStateGroup("absence")
