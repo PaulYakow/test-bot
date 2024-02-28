@@ -63,18 +63,16 @@ func (c *controller) absenceProcessInit() {
 }
 
 func startAbsenceHandler(tc tele.Context, state fsm.Context) error {
-	inline := &tele.ReplyMarkup{}
-	inline.Inline(
-		inline.Row(absenceAddRecordBtn),
-		inline.Row(absenceEditRecordBtn))
-	inline.ResizeKeyboard = true
+	rm := &tele.ReplyMarkup{}
+	rm.Inline(
+		rm.Row(absenceAddRecordBtn),
+		rm.Row(absenceEditRecordBtn))
 
-	menu := &tele.ReplyMarkup{}
-	menu.Reply(menu.Row(cancelProcessBtn))
-	menu.ResizeKeyboard = true
+	rm.Reply(rm.Row(cancelProcessBtn))
+	rm.ResizeKeyboard = true
 
 	state.Set(absenceSelectActionState)
-	return tc.Send("❕<b>Выберите действие</b>❕", inline, menu)
+	return tc.Send("❕<b>Выберите действие</b>❕", rm)
 }
 
 func absenceAddRecordHandler(tc tele.Context, state fsm.Context) error {
