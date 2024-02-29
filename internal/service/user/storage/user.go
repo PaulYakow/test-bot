@@ -59,6 +59,7 @@ func (s *Storage) UserIDByLastName(ctx context.Context, lastName string) (uint64
 	const op = "user storage: user id by last name"
 
 	lastName += "%"
+	log.Println(fmt.Sprintf("%s input: %s", op, lastName))
 	row := s.Pool.QueryRow(ctx,
 		`SELECT id
 			FROM users
@@ -76,13 +77,12 @@ func (s *Storage) ListUsersByLastName(ctx context.Context, lastName string) ([]m
 	const op = "user storage: list users by last name"
 
 	lastName += "%"
+	log.Println(fmt.Sprintf("%s input: %s", op, lastName))
 	rows, err := s.Pool.Query(ctx,
 		`SELECT id,
        				format('%s %s.%s. (%s)', last_name, LEFT(first_name, 1), LEFT(middle_name, 1), service_number) AS description
 			FROM users
-			WHERE last_name ILIKE @last_name;`,
-		pgx.NamedArgs{"last_name": lastName},
-	)
+			WHERE last_name ILIKE $1;`, lastName)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
