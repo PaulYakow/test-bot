@@ -10,7 +10,7 @@ import (
 	"github.com/PaulYakow/test-bot/internal/model"
 )
 
-func (s *storage) Create(ctx context.Context, mu model.User) (uint64, error) {
+func (s *Storage) Create(ctx context.Context, mu model.User) (uint64, error) {
 	const op = "user storage: create user"
 
 	u := convertModelUserToUser(&mu)
@@ -37,7 +37,7 @@ func (s *storage) Create(ctx context.Context, mu model.User) (uint64, error) {
 	return u.ID, nil
 }
 
-func (s *storage) CountUsersByLastName(ctx context.Context, lastName string) (int, error) {
+func (s *Storage) CountUsersByLastName(ctx context.Context, lastName string) (int, error) {
 	const op = "user storage: count users by last name"
 
 	log.Println(fmt.Sprintf("%s input: %s", op, lastName))
@@ -56,7 +56,7 @@ func (s *storage) CountUsersByLastName(ctx context.Context, lastName string) (in
 	return count, nil
 }
 
-func (s *storage) UserIDByLastName(ctx context.Context, lastName string) (uint64, error) {
+func (s *Storage) UserIDByLastName(ctx context.Context, lastName string) (uint64, error) {
 	const op = "user storage: user id by last name"
 
 	row := s.Pool.QueryRow(ctx,
@@ -74,14 +74,14 @@ func (s *storage) UserIDByLastName(ctx context.Context, lastName string) (uint64
 	return id, nil
 }
 
-func (s *storage) ListUsersByLastName(ctx context.Context, lastName string) ([]model.UserInfo, error) {
+func (s *Storage) ListUsersByLastName(ctx context.Context, lastName string) ([]model.UserInfo, error) {
 	const op = "user storage: list users by last name"
 
 	rows, err := s.Pool.Query(ctx,
 		`SELECT id,
        				format('%s %s.%s. (%s)', last_name, LEFT(first_name, 1), LEFT(middle_name, 1), service_number) AS description
 			FROM users
-			WHERE last_name ILIKE @last_name;`,
+			WHERE last_name ILIKE @last_name`,
 		pgx.NamedArgs{"last_name": lastName + "%"},
 	)
 	if err != nil {

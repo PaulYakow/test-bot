@@ -11,6 +11,10 @@ import (
 	"github.com/PaulYakow/test-bot/internal/storage"
 )
 
+var (
+	_ controller.UserService = &user.Service{}
+)
+
 func Run(ctx context.Context, cfg *config.Config) error {
 	const op = "app run"
 

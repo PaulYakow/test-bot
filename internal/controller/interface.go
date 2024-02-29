@@ -11,4 +11,5 @@ type UserService interface {
 	CountUsersWithLastName(ctx context.Context, lastName string) (int, error)
 	UserIDWithLastName(ctx context.Context, lastName string) (uint64, error)
 	ListUsersWithLastName(ctx context.Context, lastName string) ([]model.UserInfo, error)
+	ListAbsenceCode(ctx context.Context) ([]string, error)
 }

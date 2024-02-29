@@ -43,7 +43,6 @@ func testHandler(tc tele.Context) error {
 
 	inline.Inline(rows...)
 	inline.ResizeKeyboard = true
-	inline.OneTimeKeyboard = true
 
 	return tc.Send(msg, inline)
 }
