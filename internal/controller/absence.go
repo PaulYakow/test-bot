@@ -103,13 +103,13 @@ func absenceAddRecordHandler(tc tele.Context, state fsm.Context) error {
 }
 
 func (c *controller) absenceInputUserHandler(tc tele.Context, state fsm.Context) error {
-	input := tc.Message().Text
+	lastName := tc.Message().Text
 
 	// Проверка количества записей:
 	// 0 - сотрудники с такой фамилией не найдены (absenceNoUserState)
 	// =1 - найден один сотрудник (absenceSelectCodeState)
 	// >1 - найдено несколько сотрудников (absenceSelectUserHandler)
-	count, err := c.us.CountUsersWithLastName(context.Background(), input)
+	count, err := c.us.CountUsersWithLastName(context.Background(), lastName)
 	if err != nil {
 		tc.Bot().OnError(err, tc)
 		state.Finish(true)
@@ -118,11 +118,11 @@ func (c *controller) absenceInputUserHandler(tc tele.Context, state fsm.Context)
 
 	switch count {
 	case 0:
-		go state.Update(absenceLastNameKey, input)
+		state.Update(absenceLastNameKey, lastName)
 		go state.Set(absenceNoUserState)
 		return absenceNoUserHandler(tc, state)
 	case 1:
-		id, err := c.us.UserIDWithLastName(context.Background(), input)
+		id, err := c.us.UserIDWithLastName(context.Background(), lastName)
 		if err != nil {
 			tc.Bot().OnError(err, tc)
 			state.Finish(true)
@@ -133,7 +133,7 @@ func (c *controller) absenceInputUserHandler(tc tele.Context, state fsm.Context)
 		go state.Set(absenceSelectCodeState)
 		return c.absenceSelectCodeHandler(tc, state)
 	default:
-		go state.Update(absenceLastNameKey, input)
+		state.Update(absenceLastNameKey, lastName)
 		go state.Set(absenceSelectUserState)
 		return c.absenceSelectUserHandler(tc, state)
 	}
