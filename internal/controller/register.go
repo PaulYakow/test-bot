@@ -167,7 +167,7 @@ func (c *controller) registerConfirmHandler(tc tele.Context, state fsm.Context) 
 		LastName:      lastName,
 		FirstName:     firstName,
 		MiddleName:    middleName,
-		Birthday:      birthday.Format(dateLayout),
+		Birthday:      birthday,
 		Position:      position,
 		ServiceNumber: serviceNumber,
 	})
