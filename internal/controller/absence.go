@@ -178,6 +178,7 @@ func (c *controller) absenceSelectUserHandler(tc tele.Context, state fsm.Context
 	}
 	rm.Inline(rows...)
 	rm.ResizeKeyboard = true
+	rm.OneTimeKeyboard = true
 
 	return tc.Send(`❗️ Найдено более одного сотрудника.
 Выберите требуемого:`,
