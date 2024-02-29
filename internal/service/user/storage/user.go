@@ -62,9 +62,7 @@ func (s *Storage) UserIDByLastName(ctx context.Context, lastName string) (uint64
 	row := s.Pool.QueryRow(ctx,
 		`SELECT id
 			FROM users
-			WHERE last_name ILIKE '@last_name';`,
-		pgx.NamedArgs{"last_name": lastName},
-	)
+			WHERE last_name ILIKE $1;`, lastName)
 
 	var id uint64
 	if err := row.Scan(&id); err != nil {
@@ -82,7 +80,7 @@ func (s *Storage) ListUsersByLastName(ctx context.Context, lastName string) ([]m
 		`SELECT id,
        				format('%s %s.%s. (%s)', last_name, LEFT(first_name, 1), LEFT(middle_name, 1), service_number) AS description
 			FROM users
-			WHERE last_name ILIKE '@last_name';`,
+			WHERE last_name ILIKE @last_name;`,
 		pgx.NamedArgs{"last_name": lastName},
 	)
 	if err != nil {
