@@ -45,8 +45,7 @@ func (s *Storage) CountUsersByLastName(ctx context.Context, lastName string) (in
 	row := s.Pool.QueryRow(ctx,
 		`SELECT COUNT(*)
 			FROM users
-			WHERE last_name ILIKE '@last_name';`,
-		pgx.NamedArgs{"last_name": lastName},
+			WHERE last_name ILIKE '$1';`, lastName,
 	)
 
 	var count int
