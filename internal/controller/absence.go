@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"time"
 
 	"github.com/vitaliy-ukiru/fsm-telebot"
 	tele "gopkg.in/telebot.v3"
@@ -307,14 +308,24 @@ func absenceResetHandler(tc tele.Context, state fsm.Context) error {
 }
 
 func absenceFromStateStorage(state fsm.Context) model.Absence {
-	ma := model.Absence{}
+	var (
+		userID    uint64
+		code      string
+		dateBegin time.Time
+		dateEnd   time.Time
+	)
 
-	state.MustGet(absenceUserIDKey, ma.UserID)
-	state.MustGet(absenceCodeKey, ma.Code)
-	state.MustGet(absenceBeginKey, ma.DateBegin)
-	state.MustGet(absenceEndKey, ma.DateEnd)
+	state.MustGet(absenceUserIDKey, &userID)
+	state.MustGet(absenceCodeKey, &code)
+	state.MustGet(absenceBeginKey, &dateBegin)
+	state.MustGet(absenceEndKey, &dateEnd)
 
-	log.Printf("add absence: from state storage %v\n", ma)
+	log.Printf("add absence: from state storage %v %v %v %v\n", userID, code, dateBegin, dateEnd)
 
-	return ma
+	return model.Absence{
+		UserID:    userID,
+		Code:      code,
+		DateBegin: dateBegin,
+		DateEnd:   dateEnd,
+	}
 }
