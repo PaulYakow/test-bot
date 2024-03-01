@@ -7,9 +7,14 @@ import (
 )
 
 type UserService interface {
-	AddUser(ctx context.Context, user model.User) (uint64, error)
-	CountUsersWithLastName(ctx context.Context, lastName string) (int, error)
-	UserIDWithLastName(ctx context.Context, lastName string) (uint64, error)
-	ListUsersWithLastName(ctx context.Context, lastName string) ([]model.UserInfo, error)
-	ListAbsenceCode(ctx context.Context) ([]string, error)
+	Add(ctx context.Context, user model.User) (uint64, error)
+	NumberWithSpecifiedLastName(ctx context.Context, lastName string) (int, error)
+	IDWithSpecifiedLastName(ctx context.Context, lastName string) (uint64, error)
+	ListWithSpecifiedLastName(ctx context.Context, lastName string) ([]model.UserInfo, error)
+	InfoWithSpecifiedID(ctx context.Context, id uint64) (string, error)
+}
+
+type AbsenceService interface {
+	Add(ctx context.Context, absence model.Absence) (uint64, error)
+	ListCodes(ctx context.Context) ([]string, error)
 }

@@ -3,13 +3,15 @@ package controller
 import (
 	"context"
 	"fmt"
+	"log"
 	"strconv"
-	"time"
 
 	"github.com/vitaliy-ukiru/fsm-telebot"
 	tele "gopkg.in/telebot.v3"
 
 	_ "github.com/go-playground/validator/v10"
+
+	"github.com/PaulYakow/test-bot/internal/model"
 )
 
 /*
@@ -68,10 +70,10 @@ func (c *controller) absenceProcessInit() {
 
 	c.manager.Bind(tele.OnText, absenceBeginState, absenceBeginHandler)
 
-	c.manager.Bind(tele.OnText, absenceEndState, absenceEndHandler)
-	c.manager.Bind(&absenceSkipEndBtn, absenceEndState, absenceSkipEndHandler)
+	c.manager.Bind(tele.OnText, absenceEndState, c.absenceEndHandler)
+	c.manager.Bind(&absenceSkipEndBtn, absenceEndState, c.absenceSkipEndHandler)
 
-	c.manager.Bind(&confirmBtn, absenceConfirmState, c.absenceConfirmHandler)
+	c.manager.Bind(&confirmBtn, absenceConfirmState, c.absenceConfirmHandler, deleteAfterHandler)
 	c.manager.Bind(&resetBtn, absenceConfirmState, absenceResetHandler)
 	c.manager.Bind(&cancelBtn, absenceConfirmState, cancelHandler, deleteAfterHandler)
 }
@@ -91,15 +93,11 @@ func startAbsenceHandler(tc tele.Context, state fsm.Context) error {
 }
 
 func absenceAddRecordHandler(tc tele.Context, state fsm.Context) error {
-	rm := &tele.ReplyMarkup{}
-	rm.Reply(rm.Row(cancelProcessBtn))
-	rm.ResizeKeyboard = true
-
 	go state.Set(absenceInputUserState)
 	return tc.Send(
 		`Введите фамилию (либо начало фамилии) сотрудника.
 <i>Регистр ввода не имеет значения.</i>`,
-		rm)
+		replyMarkupWithCancel())
 }
 
 func (c *controller) absenceInputUserHandler(tc tele.Context, state fsm.Context) error {
@@ -109,7 +107,7 @@ func (c *controller) absenceInputUserHandler(tc tele.Context, state fsm.Context)
 	// 0 - сотрудники с такой фамилией не найдены (absenceNoUserState)
 	// =1 - найден один сотрудник (absenceSelectCodeState)
 	// >1 - найдено несколько сотрудников (absenceSelectUserHandler)
-	count, err := c.us.CountUsersWithLastName(context.Background(), lastName)
+	count, err := c.user.NumberWithSpecifiedLastName(context.Background(), lastName)
 	if err != nil {
 		tc.Bot().OnError(err, tc)
 		state.Finish(true)
@@ -122,14 +120,14 @@ func (c *controller) absenceInputUserHandler(tc tele.Context, state fsm.Context)
 		go state.Set(absenceNoUserState)
 		return absenceNoUserHandler(tc, state)
 	case 1:
-		id, err := c.us.UserIDWithLastName(context.Background(), lastName)
+		id, err := c.user.IDWithSpecifiedLastName(context.Background(), lastName)
 		if err != nil {
 			tc.Bot().OnError(err, tc)
 			state.Finish(true)
 			return tc.Send("Ошибка при поиске id сотрудника в БД")
 		}
 
-		go state.Update(absenceUserIDKey, id)
+		state.Update(absenceUserIDKey, id)
 		go state.Set(absenceSelectCodeState)
 		return c.absenceSelectCodeHandler(tc, state)
 	default:
@@ -161,7 +159,7 @@ func (c *controller) absenceSelectUserHandler(tc tele.Context, state fsm.Context
 	var lastName string
 	state.MustGet(absenceLastNameKey, &lastName)
 
-	usersInfo, err := c.us.ListUsersWithLastName(context.Background(), lastName)
+	usersInfo, err := c.user.ListWithSpecifiedLastName(context.Background(), lastName)
 	if err != nil {
 		tc.Bot().OnError(err, tc)
 		// TODO: возвращаться на предыдущий шаг или выдавать запрос на повторный ввод?
@@ -196,9 +194,6 @@ func (c *controller) absenceConfirmUserHandler(tc tele.Context, state fsm.Contex
 
 func absenceEditRecordHandler(tc tele.Context, state fsm.Context) error {
 	// TODO: необходим список записей (в виде кнопок), в которых date_end IS NULL: "Фамилия И.О. - Причина (Дата начала)"
-	rm := &tele.ReplyMarkup{}
-	rm.Reply(rm.Row(cancelProcessBtn))
-	rm.ResizeKeyboard = true
 
 	return nil
 }
@@ -208,7 +203,7 @@ func absenceSelectRecordHandler(tc tele.Context, state fsm.Context) error {
 }
 
 func (c *controller) absenceSelectCodeHandler(tc tele.Context, state fsm.Context) error {
-	absenceCodes, err := c.us.ListAbsenceCode(context.Background())
+	absenceCodes, err := c.absence.ListCodes(context.Background())
 	if err != nil {
 		tc.Bot().OnError(err, tc)
 		state.Finish(true)
@@ -236,52 +231,72 @@ func absenceConfirmCodeHandler(tc tele.Context, state fsm.Context) error {
 	return tc.Send("Введите начальную дату в формате ДД.ММ.ГГГГ (например, 01.01.2001)")
 }
 
+// TODO: календарь для выбора даты
 func absenceBeginHandler(tc tele.Context, state fsm.Context) error {
-	// TODO: календарь для выбора даты
+	rm := replyMarkupWithCancel()
+	rm.Reply(rm.Row(absenceSkipEndBtn))
+
 	input := tc.Message().Text
 	go state.Update(absenceBeginKey, input)
 
 	go state.Set(absenceEndState)
-	return tc.Send("Введите конечную дату в формате ДД.ММ.ГГГГ (например, 01.01.2001)")
+	return tc.Send("Введите конечную дату в формате ДД.ММ.ГГГГ (например, 01.01.2001)", rm)
 }
 
-func absenceEndHandler(tc tele.Context, state fsm.Context) error {
-	// TODO: календарь для выбора даты
+// TODO: календарь для выбора даты
+func (c *controller) absenceEndHandler(tc tele.Context, state fsm.Context) error {
 	input := tc.Message().Text
 	go state.Update(absenceEndKey, input)
 
 	go state.Set(absenceConfirmState)
-	return tc.Send("Данные приняты")
+	return c.absenceCheckData(tc, state, "✅ Все данные приняты.")
 }
 
-func absenceSkipEndHandler(tc tele.Context, state fsm.Context) error {
-	return nil
+func (c *controller) absenceSkipEndHandler(tc tele.Context, state fsm.Context) error {
+	go state.Set(absenceConfirmState)
+	return c.absenceCheckData(tc, state,
+		`⚠️ Дата окончания пропущена.
+Остальные данные приняты.`)
+}
+
+func (c *controller) absenceCheckData(tc tele.Context, state fsm.Context, msg string) error {
+	a := absenceFromStateStorage(state)
+
+	info, err := c.user.InfoWithSpecifiedID(context.Background(), a.UserID)
+	if err != nil {
+		tc.Bot().OnError(err, tc)
+		state.Finish(true)
+		return tc.Send("Ошибка при поиске сотрудника в БД")
+	}
+
+	return tc.Send(fmt.Sprintf(
+		`%s
+
+<b>Проверьте данные:</b>
+<i>Сотрудник</i>: %q
+<i>Причина неявки</i>: %q
+<i>Дата начала</i>: %v
+<i>Дата окончания</i>: %v`,
+		msg,
+		info,
+		a.Code,
+		a.DateBegin.Format(dateLayout),
+		a.DateEnd.Format(dateLayout),
+	),
+		replyMarkupForConfirmState())
+
 }
 
 func (c *controller) absenceConfirmHandler(tc tele.Context, state fsm.Context) error {
 	defer state.Finish(true)
 
-	var (
-		lastName      string
-		firstName     string
-		middleName    string
-		birthday      time.Time
-		position      string
-		serviceNumber int
-	)
-	state.MustGet(lastNameKey, &lastName)
-	state.MustGet(firstNameKey, &firstName)
-	state.MustGet(middleNameKey, &middleName)
-	state.MustGet(birthdayKey, &birthday)
-	state.MustGet(positionKey, &position)
-	state.MustGet(serviceNumberKey, &serviceNumber)
+	id, err := c.absence.Add(context.Background(), absenceFromStateStorage(state))
+	if err != nil {
+		tc.Bot().OnError(err, tc)
+		return tc.Send(fmt.Sprintf("Ошибка сохранения: %v", err))
+	}
 
-	//if err != nil {
-	//	tc.Bot().OnError(err, tc)
-	//	return tc.Send(fmt.Sprintf("Ошибка сохранения: %v", err))
-	//}
-
-	return tc.Send(fmt.Sprintf("Данные приняты. ID нового сотрудника: %d", 0), tele.RemoveKeyboard)
+	return tc.Send(fmt.Sprintf("Данные приняты. ID записи: %d", id), tele.RemoveKeyboard)
 }
 
 func absenceResetHandler(tc tele.Context, state fsm.Context) error {
@@ -289,4 +304,17 @@ func absenceResetHandler(tc tele.Context, state fsm.Context) error {
 	return tc.Send(`Начнём заново.
 Введите фамилию сотрудника.
 `)
+}
+
+func absenceFromStateStorage(state fsm.Context) model.Absence {
+	ma := model.Absence{}
+
+	state.MustGet(absenceUserIDKey, ma.UserID)
+	state.MustGet(absenceCodeKey, ma.Code)
+	state.MustGet(absenceBeginKey, ma.DateBegin)
+	state.MustGet(absenceEndKey, ma.DateEnd)
+
+	log.Printf("add absence: from state storage %v\n", ma)
+
+	return ma
 }

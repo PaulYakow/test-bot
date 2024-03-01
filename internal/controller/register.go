@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"log"
 	"strconv"
 	"time"
 
@@ -49,12 +50,8 @@ func (c *controller) registerProcessInit() {
 }
 
 func startRegisterHandler(tc tele.Context, state fsm.Context) error {
-	menu := &tele.ReplyMarkup{}
-	menu.Reply(menu.Row(cancelProcessBtn))
-	menu.ResizeKeyboard = true
-
 	state.Set(registerLastNameState)
-	return tc.Send("Введите фамилию сотрудника", menu)
+	return tc.Send("Введите фамилию сотрудника", replyMarkupWithCancel())
 }
 
 func registerLastNameHandler(tc tele.Context, state fsm.Context) error {
@@ -109,24 +106,7 @@ func registerServiceNumberHandler(tc tele.Context, state fsm.Context) error {
 
 	go state.Set(registerConfirmState)
 
-	reply := &tele.ReplyMarkup{}
-	reply.Inline(
-		reply.Row(confirmBtn),
-		reply.Row(resetBtn, cancelBtn),
-	)
-
-	var (
-		lastName   string
-		firstName  string
-		middleName string
-		birthday   time.Time
-		position   string
-	)
-	state.MustGet(lastNameKey, &lastName)
-	state.MustGet(firstNameKey, &firstName)
-	state.MustGet(middleNameKey, &middleName)
-	state.MustGet(birthdayKey, &birthday)
-	state.MustGet(positionKey, &position)
+	u := userFromStateStorage(state)
 
 	return tc.Send(fmt.Sprintf(
 		`<b>Проверьте данные:</b>
@@ -136,41 +116,20 @@ func registerServiceNumberHandler(tc tele.Context, state fsm.Context) error {
 <i>Дата рождения</i>: %v
 <i>Должность</i>: %q
 <i>Табельный номер</i>: %d`,
-		lastName,
-		firstName,
-		middleName,
-		birthday.Format(dateLayout),
-		position,
+		u.LastName,
+		u.FirstName,
+		u.MiddleName,
+		u.Birthday.Format(dateLayout),
+		u.Position,
 		serviceNumber,
-	), reply)
+	),
+		replyMarkupForConfirmState())
 }
 
 func (c *controller) registerConfirmHandler(tc tele.Context, state fsm.Context) error {
 	defer state.Finish(true)
 
-	var (
-		lastName      string
-		firstName     string
-		middleName    string
-		birthday      time.Time
-		position      string
-		serviceNumber int
-	)
-	state.MustGet(lastNameKey, &lastName)
-	state.MustGet(firstNameKey, &firstName)
-	state.MustGet(middleNameKey, &middleName)
-	state.MustGet(birthdayKey, &birthday)
-	state.MustGet(positionKey, &position)
-	state.MustGet(serviceNumberKey, &serviceNumber)
-
-	id, err := c.us.AddUser(context.Background(), model.User{
-		LastName:      lastName,
-		FirstName:     firstName,
-		MiddleName:    middleName,
-		Birthday:      birthday,
-		Position:      position,
-		ServiceNumber: serviceNumber,
-	})
+	id, err := c.user.Add(context.Background(), userFromStateStorage(state))
 	if err != nil {
 		tc.Bot().OnError(err, tc)
 		return tc.Send(fmt.Sprintf("Ошибка сохранения: %v", err))
@@ -184,4 +143,19 @@ func registerResetHandler(tc tele.Context, state fsm.Context) error {
 	return tc.Send(`Начнём заново.
 Введите фамилию сотрудника.
 `)
+}
+
+func userFromStateStorage(state fsm.Context) model.User {
+	mu := model.User{}
+
+	state.MustGet(lastNameKey, mu.LastName)
+	state.MustGet(firstNameKey, mu.FirstName)
+	state.MustGet(middleNameKey, mu.MiddleName)
+	state.MustGet(birthdayKey, mu.Birthday)
+	state.MustGet(positionKey, mu.Position)
+	state.MustGet(serviceNumberKey, mu.ServiceNumber)
+
+	log.Printf("register user: from state storage %v\n", mu)
+
+	return mu
 }

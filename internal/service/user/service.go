@@ -1,17 +1,42 @@
 package user
 
-import "github.com/PaulYakow/test-bot/internal/service/user/storage"
+import (
+	"context"
+
+	"github.com/PaulYakow/test-bot/internal/model"
+	"github.com/PaulYakow/test-bot/internal/service/user/storage"
+)
 
 var (
-	_ userStorage = &storage.Storage{}
+	_ userStorage = &storage.User{}
 )
 
 type Service struct {
-	userStorage userStorage
+	storage userStorage
 }
 
 func New(us userStorage) *Service {
 	return &Service{
-		userStorage: us,
+		storage: us,
 	}
+}
+
+func (s *Service) Add(ctx context.Context, u model.User) (uint64, error) {
+	return s.storage.Create(ctx, u)
+}
+
+func (s *Service) NumberWithSpecifiedLastName(ctx context.Context, lastName string) (int, error) {
+	return s.storage.CountByLastName(ctx, lastName)
+}
+
+func (s *Service) IDWithSpecifiedLastName(ctx context.Context, lastName string) (uint64, error) {
+	return s.storage.IDByLastName(ctx, lastName)
+}
+
+func (s *Service) ListWithSpecifiedLastName(ctx context.Context, lastName string) ([]model.UserInfo, error) {
+	return s.storage.ListByLastName(ctx, lastName)
+}
+
+func (s *Service) InfoWithSpecifiedID(ctx context.Context, id uint64) (string, error) {
+	return s.storage.InfoByID(ctx, id)
 }

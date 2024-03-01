@@ -3,8 +3,6 @@ package controller
 import (
 	"fmt"
 	"log"
-	"strings"
-	"unicode/utf8"
 
 	"github.com/vitaliy-ukiru/fsm-telebot"
 	"github.com/vitaliy-ukiru/fsm-telebot/storages/memory"
@@ -28,13 +26,19 @@ var (
 	cancelBtn  = tele.Btn{Text: "❌ Отменить", Unique: "cancel"}
 )
 
+type ServiceSet struct {
+	User    UserService
+	Absence AbsenceService
+}
+
 type controller struct {
 	bot     *tele.Bot
 	manager *fsm.Manager
-	us      UserService
+	user    UserService
+	absence AbsenceService
 }
 
-func New(cfg *config.Config, us UserService) (*controller, error) {
+func New(cfg *config.Config, ss ServiceSet) (*controller, error) {
 	const op = "controller: create new"
 
 	bot, err := tele.NewBot(tele.Settings{
@@ -62,7 +66,8 @@ func New(cfg *config.Config, us UserService) (*controller, error) {
 	return &controller{
 		bot:     bot,
 		manager: manager,
-		us:      us,
+		user:    ss.User,
+		absence: ss.Absence,
 	}, nil
 }
 
@@ -70,6 +75,27 @@ func (c *controller) Start() {
 	const op = "controller: bot start"
 
 	c.bot.Use(middleware.AutoRespond())
+
+	c.setCommands()
+
+	c.manager.Bind("/state", fsm.AnyState, func(c tele.Context, state fsm.Context) error {
+		s, err := state.State()
+		if err != nil {
+			return c.Send(fmt.Sprintf("can't get state: %s", err))
+		}
+		return c.Send(s.GoString())
+	})
+
+	c.registerProcessInit()
+	c.absenceProcessInit()
+
+	log.Println("Handlers configured")
+
+	c.bot.Start()
+}
+
+func (c *controller) setCommands() {
+	const op = "controller: set commands"
 
 	helpCmd := tele.Command{
 		Text:        "help",
@@ -98,28 +124,12 @@ func (c *controller) Start() {
 	})
 	log.Println(fmt.Sprintf("%s: %v", op, err))
 
-	// Commands
 	c.bot.Handle("/"+helpCmd.Text, helpHandler)
 	c.bot.Handle("/"+testCmd.Text, testHandler)
 	c.manager.Bind("/"+regCmd.Text, fsm.DefaultState, startRegisterHandler)
 	c.manager.Bind("/"+addAbsenceCmd.Text, fsm.DefaultState, startAbsenceHandler)
 	c.manager.Bind("/cancel", fsm.AnyState, cancelHandler)
 	c.manager.Bind(&cancelProcessBtn, fsm.AnyState, cancelHandler)
-
-	c.manager.Bind("/state", fsm.AnyState, func(c tele.Context, state fsm.Context) error {
-		s, err := state.State()
-		if err != nil {
-			return c.Send(fmt.Sprintf("can't get state: %s", err))
-		}
-		return c.Send(s.GoString())
-	})
-
-	c.registerProcessInit()
-	c.absenceProcessInit()
-
-	log.Println("Handlers configured")
-
-	c.bot.Start()
 }
 
 func helpHandler(tc tele.Context) error {
@@ -135,40 +145,21 @@ func cancelHandler(tc tele.Context, state fsm.Context) error {
 	return tc.Send("Процесс добавления отменён. Введённые данные удалены.")
 }
 
-func editFormMessage(old, new string) tele.MiddlewareFunc {
-	return func(next tele.HandlerFunc) tele.HandlerFunc {
-		return func(c tele.Context) error {
-			strOffset := utf8.RuneCountInString(old)
-			if nLen := utf8.RuneCountInString(new); nLen > 1 {
-				strOffset -= nLen - 1
-			}
-			fmt.Printf("edit message: strOffset=%d\n", strOffset)
+// TODO: move to view/ui
+func replyMarkupWithCancel() *tele.ReplyMarkup {
+	rm := &tele.ReplyMarkup{}
+	rm.Reply(rm.Row(cancelProcessBtn))
+	rm.ResizeKeyboard = true
 
-			entities := make(tele.Entities, len(c.Message().Entities))
-			for i, entity := range c.Message().Entities {
-				entity.Offset -= strOffset
-				entities[i] = entity
-			}
-			fmt.Printf("edit message: entities=%v\n", entities)
-
-			defer func() {
-				err := c.EditOrSend(strings.Replace(c.Message().Text, old, new, 1), entities)
-				if err != nil {
-					c.Bot().OnError(err, c)
-				}
-			}()
-			return next(c)
-		}
-	}
+	return rm
 }
 
-func deleteAfterHandler(next tele.HandlerFunc) tele.HandlerFunc {
-	return func(c tele.Context) error {
-		defer func(c tele.Context) {
-			if err := c.Delete(); err != nil {
-				c.Bot().OnError(err, c)
-			}
-		}(c)
-		return next(c)
-	}
+func replyMarkupForConfirmState() *tele.ReplyMarkup {
+	rm := &tele.ReplyMarkup{}
+	rm.Inline(
+		rm.Row(confirmBtn),
+		rm.Row(resetBtn, cancelBtn),
+	)
+
+	return rm
 }
