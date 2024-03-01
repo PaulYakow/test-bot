@@ -234,10 +234,14 @@ func absenceConfirmCodeHandler(tc tele.Context, state fsm.Context) error {
 
 // TODO: календарь для выбора даты
 func absenceBeginHandler(tc tele.Context, state fsm.Context) error {
+	// TODO: добавлять кнопку "Пропустить" к отмене (либо в следующем обработчике снова добавлять отмену)
 	rm := replyMarkupWithCancel()
 	rm.Reply(rm.Row(absenceSkipEndBtn))
 
-	input := tc.Message().Text
+	input, err := time.Parse(dateLayout, tc.Message().Text)
+	if err != nil {
+		return tc.Send("Дата должна иметь формат ДД.ММ.ГГГГ (например, 01.01.2001)")
+	}
 	go state.Update(absenceBeginKey, input)
 
 	go state.Set(absenceEndState)
@@ -246,7 +250,10 @@ func absenceBeginHandler(tc tele.Context, state fsm.Context) error {
 
 // TODO: календарь для выбора даты
 func (c *controller) absenceEndHandler(tc tele.Context, state fsm.Context) error {
-	input := tc.Message().Text
+	input, err := time.Parse(dateLayout, tc.Message().Text)
+	if err != nil {
+		return tc.Send("Дата должна иметь формат ДД.ММ.ГГГГ (например, 01.01.2001)")
+	}
 	go state.Update(absenceEndKey, input)
 
 	go state.Set(absenceConfirmState)
