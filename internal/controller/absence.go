@@ -28,7 +28,7 @@ var (
 	absenceEditRecordBtn     = tele.Btn{Text: "📝 Обновить существующую запись", Unique: "absence_edit_record"}
 	absenceUserConfirmBtn    = tele.Btn{Unique: "absence_confirm_user"}
 	absenceCodeConfirmBtn    = tele.Btn{Unique: "absence_confirm_code"}
-	absenceSkipEndBtn        = tele.Btn{Text: "↪️ Пропустить", Unique: "absence_skip_end"}
+	absenceSkipEndBtn        = tele.Btn{Text: "↪️ Пропустить"}
 	absenceRestartProcessBtn = tele.Btn{Text: "✅ Да", Unique: "absence_restart_process"}
 	absenceCancelProcessBtn  = tele.Btn{Text: "❌ Нет", Unique: "absence_cancel_process"}
 
