@@ -249,7 +249,7 @@ func (c *controller) absenceEndHandler(tc tele.Context, state fsm.Context) error
 	if err != nil {
 		return tc.Send("Дата должна иметь формат ДД.ММ.ГГГГ (например, 01.01.2001)")
 	}
-	go state.Update(absenceEndKey, input)
+	state.Update(absenceEndKey, input)
 
 	go state.Set(absenceConfirmState)
 	return c.absenceCheckData(tc, state, "✅ Все данные приняты.")
