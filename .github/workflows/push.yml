@@ -68,7 +68,7 @@ jobs:
         run: |
           ssh -i deploy_key -p ${{ env.SSH_PORT }} -o StrictHostKeyChecking=no ${{ env.HOST }} "\
           cd ${{ env.DEPLOY_DIRECTORY }} && \
-          docker login ghcr.io -p ${{ secrets.CR_PAT }} && \
+          echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u $ --password-stdin && \
           docker compose down && \
           docker compose up -d
           echo y | docker image prune && \
