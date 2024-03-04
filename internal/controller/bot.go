@@ -75,6 +75,9 @@ func (c *controller) Start() {
 	const op = "controller: bot start"
 
 	c.bot.Use(middleware.AutoRespond())
+	c.bot.Use(middleware.Recover(func(err error) {
+		log.Printf("[ERR-RECOVER] %q", err)
+	}))
 
 	c.setCommands()
 
@@ -97,6 +100,7 @@ func (c *controller) Start() {
 func (c *controller) setCommands() {
 	const op = "controller: set commands"
 
+	// TODO: add const for commands - cmdHelp = "/help" - and use it
 	helpCmd := tele.Command{
 		Text:        "help",
 		Description: "Узнать подробности",

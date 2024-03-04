@@ -10,8 +10,6 @@ import (
 	"github.com/vitaliy-ukiru/fsm-telebot"
 	tele "gopkg.in/telebot.v3"
 
-	_ "github.com/go-playground/validator/v10"
-
 	"github.com/PaulYakow/test-bot/internal/model"
 )
 
@@ -236,7 +234,7 @@ func absenceConfirmCodeHandler(tc tele.Context, state fsm.Context) error {
 func absenceBeginHandler(tc tele.Context, state fsm.Context) error {
 	// TODO: добавлять кнопку "Пропустить" к отмене (либо в следующем обработчике снова добавлять отмену)
 	rm := replyMarkupWithCancel()
-	rm.Reply(rm.Row(absenceSkipEndBtn))
+	rm.Row(absenceSkipEndBtn)
 
 	input, err := time.Parse(dateLayout, tc.Message().Text)
 	if err != nil {
@@ -288,8 +286,8 @@ func (c *controller) absenceCheckData(tc tele.Context, state fsm.Context, msg st
 		msg,
 		info,
 		a.Code,
-		a.DateBegin.Format(dateLayout),
-		a.DateEnd.Format(dateLayout),
+		dateMessage(a.DateBegin),
+		dateMessage(a.DateEnd),
 	),
 		replyMarkupForConfirmState())
 
@@ -335,4 +333,12 @@ func absenceFromStateStorage(state fsm.Context) model.Absence {
 		DateBegin: dateBegin,
 		DateEnd:   dateEnd,
 	}
+}
+
+func dateMessage(d time.Time) string {
+	if d.IsZero() {
+		return "<u>Не указана</u>"
+	}
+
+	return d.Format(dateLayout)
 }
