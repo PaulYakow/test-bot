@@ -27,7 +27,6 @@ var (
 	absenceEditRecordBtn     = tele.Btn{Text: "📝 Обновить существующую запись", Unique: "absence_edit_record"}
 	absenceUserConfirmBtn    = tele.Btn{Unique: "absence_confirm_user"}
 	absenceCodeConfirmBtn    = tele.Btn{Unique: "absence_confirm_code"}
-	absenceSkipEndBtn        = tele.Btn{Text: "↪️ Пропустить"}
 	absenceRestartProcessBtn = tele.Btn{Text: "✅ Да", Unique: "absence_restart_process"}
 	absenceCancelProcessBtn  = tele.Btn{Text: "❌ Нет", Unique: "absence_cancel_process"}
 
@@ -70,7 +69,7 @@ func (c *controller) absenceProcessInit() {
 	c.manager.Bind(tele.OnText, absenceBeginState, absenceBeginHandler)
 
 	c.manager.Bind(tele.OnText, absenceEndState, c.absenceEndHandler)
-	c.manager.Bind(&absenceSkipEndBtn, absenceEndState, c.absenceSkipEndHandler)
+	c.manager.Bind(&skipStateBtn, absenceEndState, c.absenceSkipEndHandler)
 
 	c.manager.Bind(&confirmBtn, absenceConfirmState, c.absenceConfirmHandler, deleteAfterHandler)
 	c.manager.Bind(&resetBtn, absenceConfirmState, absenceResetHandler)
@@ -232,9 +231,7 @@ func absenceConfirmCodeHandler(tc tele.Context, state fsm.Context) error {
 
 // TODO: календарь для выбора даты
 func absenceBeginHandler(tc tele.Context, state fsm.Context) error {
-	// TODO: добавлять кнопку "Пропустить" к отмене (либо в следующем обработчике снова добавлять отмену)
-	rm := replyMarkupWithCancel()
-	rm.Row(absenceSkipEndBtn)
+	rm := replyMarkupWithCancelAndSkip()
 
 	input, err := time.Parse(dateLayout, tc.Message().Text)
 	if err != nil {

@@ -19,6 +19,7 @@ const (
 var (
 	// Кнопки общие для всех процессов
 	cancelProcessBtn = tele.Btn{Text: "❌ Отменить операцию"}
+	skipStateBtn     = tele.Btn{Text: "↪️ Пропустить"}
 
 	// Кнопки (inline) при завершении процессов
 	confirmBtn = tele.Btn{Text: "✅ Подтвердить и сохранить", Unique: "confirm"}
@@ -153,6 +154,17 @@ func cancelHandler(tc tele.Context, state fsm.Context) error {
 func replyMarkupWithCancel() *tele.ReplyMarkup {
 	rm := &tele.ReplyMarkup{}
 	rm.Reply(rm.Row(cancelProcessBtn))
+	rm.ResizeKeyboard = true
+
+	return rm
+}
+
+func replyMarkupWithCancelAndSkip() *tele.ReplyMarkup {
+	rm := &tele.ReplyMarkup{}
+	rm.Reply(
+		rm.Row(cancelProcessBtn),
+		rm.Row(skipStateBtn),
+	)
 	rm.ResizeKeyboard = true
 
 	return rm
