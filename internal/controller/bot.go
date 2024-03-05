@@ -193,8 +193,8 @@ func replyMarkupList(btn tele.Btn, list []model.RecordInfo) *tele.ReplyMarkup {
 	rm := &tele.ReplyMarkup{}
 	rows := make([]tele.Row, len(list))
 	for i, item := range list {
-		absenceUserConfirmBtn.Text = item.Description
-		absenceUserConfirmBtn.Data = item.ID
+		btn.Text = item.Description
+		btn.Data = item.ID
 		rows[i] = rm.Row(btn)
 	}
 	rm.Inline(rows...)
