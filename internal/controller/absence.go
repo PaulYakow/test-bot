@@ -184,6 +184,10 @@ func (c *controller) absenceSelectRecordHandler(tc tele.Context, state fsm.Conte
 		return tc.Send("Ошибка при получении списка причин неявок (с пустой датой окончания) из БД")
 	}
 
+	if len(absenceList) == 0 {
+		return tc.Send("❗<b>Записей не найдено</b>")
+	}
+
 	rows := make([]tele.Row, len(absenceList))
 	for i, ai := range absenceList {
 		absenceCodeConfirmBtn.Text = ai.Description
