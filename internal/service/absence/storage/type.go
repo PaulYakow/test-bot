@@ -2,6 +2,7 @@ package storage
 
 import (
 	"database/sql"
+	"strconv"
 	"time"
 
 	"github.com/PaulYakow/test-bot/internal/model"
@@ -27,4 +28,16 @@ func convertModelAbsenceToAbsence(ma *model.Absence) absence {
 	}
 
 	return a
+}
+
+type absenceInfo struct {
+	ID          uint64 `db:"id"`
+	Description string `db:"description"`
+}
+
+func convertAbsenceInfoToModel(ui absenceInfo) model.AbsenceInfo {
+	return model.AbsenceInfo{
+		ID:          strconv.FormatUint(ui.ID, 10),
+		Description: ui.Description,
+	}
 }

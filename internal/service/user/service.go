@@ -25,10 +25,6 @@ func (s *Service) Add(ctx context.Context, u model.User) (uint64, error) {
 	return s.storage.Create(ctx, u)
 }
 
-func (s *Service) NumberWithSpecifiedLastName(ctx context.Context, lastName string) (int, error) {
-	return s.storage.CountByLastName(ctx, lastName)
-}
-
 func (s *Service) IDWithSpecifiedLastName(ctx context.Context, lastName string) (uint64, error) {
 	return s.storage.IDByLastName(ctx, lastName)
 }

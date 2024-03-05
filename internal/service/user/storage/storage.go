@@ -48,25 +48,6 @@ func (s *User) Create(ctx context.Context, mu model.User) (uint64, error) {
 	return u.ID, nil
 }
 
-func (s *User) CountByLastName(ctx context.Context, lastName string) (int, error) {
-	const op = "user storage: count users by last name"
-
-	lastName += "%"
-	log.Println(fmt.Sprintf("%s input: %s", op, lastName))
-
-	row := s.Pool.QueryRow(ctx,
-		`SELECT COUNT(*)
-			FROM users
-			WHERE last_name ILIKE $1;`, lastName)
-
-	var count int
-	if err := row.Scan(&count); err != nil {
-		return 0, fmt.Errorf("%s: %w", op, err)
-	}
-
-	return count, nil
-}
-
 func (s *User) IDByLastName(ctx context.Context, lastName string) (uint64, error) {
 	const op = "user storage: user id by last name"
 

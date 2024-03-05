@@ -2,6 +2,7 @@ package absence
 
 import (
 	"context"
+	"time"
 
 	"github.com/PaulYakow/test-bot/internal/model"
 	"github.com/PaulYakow/test-bot/internal/service/absence/storage"
@@ -27,4 +28,12 @@ func (s *Service) ListCodes(ctx context.Context) ([]string, error) {
 
 func (s *Service) Add(ctx context.Context, absence model.Absence) (uint64, error) {
 	return s.storage.Create(ctx, absence)
+}
+
+func (s *Service) ListWithNullEndDate(ctx context.Context) ([]model.AbsenceInfo, error) {
+	return s.storage.ListByNullEndDate(ctx)
+}
+
+func (s *Service) UpdateEndDate(ctx context.Context, id uint64, date time.Time) error {
+	return s.storage.UpdateEndDate(ctx, id, date)
 }

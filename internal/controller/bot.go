@@ -12,8 +12,16 @@ import (
 	"github.com/PaulYakow/test-bot/internal/config"
 )
 
+// TODO: После завершения (или отмены) процесса удалять все сообщения кроме команды и последнего сообщения (в которое добавить информацию о созданной записи)
+
 const (
 	dateLayout = "02.01.2006"
+
+	helpEnd       = "/help"
+	addUserEnd    = "/add_user"
+	addAbsenceEnd = "/add_absence"
+	testEnd       = "/test"
+	cancelEnd     = "/cancel"
 )
 
 var (
@@ -103,43 +111,43 @@ func (c *controller) setCommands() {
 
 	// TODO: add const for commands - cmdHelp = "/help" - and use it
 	helpCmd := tele.Command{
-		Text:        "help",
+		Text:        helpEnd,
 		Description: "Узнать подробности",
 	}
-	regCmd := tele.Command{
-		Text:        "reg",
+	addUserCmd := tele.Command{
+		Text:        addUserEnd,
 		Description: "Добавить нового сотрудника",
 	}
 
 	addAbsenceCmd := tele.Command{
-		Text:        "add_absence",
+		Text:        addAbsenceEnd,
 		Description: "Добавить причину неявки сотрудника",
 	}
 
 	testCmd := tele.Command{
-		Text:        "test",
-		Description: "Для тестов функционала",
+		Text:        testEnd,
+		Description: "Тестирование функционала",
 	}
 
 	err := c.bot.SetCommands([]tele.Command{
 		helpCmd,
-		regCmd,
+		addUserCmd,
 		addAbsenceCmd,
 		testCmd,
 	})
 	log.Println(fmt.Sprintf("%s: %v", op, err))
 
-	c.bot.Handle("/"+helpCmd.Text, helpHandler)
-	c.bot.Handle("/"+testCmd.Text, testHandler)
-	c.manager.Bind("/"+regCmd.Text, fsm.DefaultState, startRegisterHandler)
-	c.manager.Bind("/"+addAbsenceCmd.Text, fsm.DefaultState, startAbsenceHandler)
-	c.manager.Bind("/cancel", fsm.AnyState, cancelHandler)
+	c.bot.Handle(helpEnd, helpHandler)
+	c.bot.Handle(testEnd, testHandler)
+	c.manager.Bind(addUserEnd, fsm.DefaultState, startRegisterHandler)
+	c.manager.Bind(addAbsenceEnd, fsm.DefaultState, startAbsenceHandler)
+	c.manager.Bind(cancelEnd, fsm.AnyState, cancelHandler)
 	c.manager.Bind(&cancelProcessBtn, fsm.AnyState, cancelHandler)
 }
 
 func helpHandler(tc tele.Context) error {
 	msg := `<b>Доступные команды:</b>
-/reg - запуск процесса добавления нового сотрудника
+/add_user - запуск процесса добавления нового сотрудника
 /add_absence - запуск процесса добавления причины отсутствия
 /cancel - отмена на любом шаге`
 	return tc.Send(msg)
