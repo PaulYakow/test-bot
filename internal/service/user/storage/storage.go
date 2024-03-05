@@ -67,7 +67,7 @@ func (s *User) IDByLastName(ctx context.Context, lastName string) (uint64, error
 	return id, nil
 }
 
-func (s *User) ListByLastName(ctx context.Context, lastName string) ([]model.UserInfo, error) {
+func (s *User) ListByLastName(ctx context.Context, lastName string) ([]model.RecordInfo, error) {
 	const op = "user storage: list users by last name"
 
 	lastName += "%"
@@ -88,7 +88,7 @@ func (s *User) ListByLastName(ctx context.Context, lastName string) ([]model.Use
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	infos := make([]model.UserInfo, len(uis))
+	infos := make([]model.RecordInfo, len(uis))
 	for i, ui := range uis {
 		infos[i] = convertUserInfoToModel(ui)
 	}
@@ -96,16 +96,36 @@ func (s *User) ListByLastName(ctx context.Context, lastName string) ([]model.Use
 	return infos, nil
 }
 
-func (s *User) InfoByID(ctx context.Context, userID uint64) (string, error) {
+func (s *User) InfoByID(ctx context.Context, id uint64) (string, error) {
 	const op = "user storage: read last name & initials by id"
 
-	log.Println(fmt.Sprintf("%s input: %d", op, userID))
+	log.Println(fmt.Sprintf("%s input: %d", op, id))
 
 	row := s.Pool.QueryRow(ctx,
 		`SELECT format('%s %s.%s. (%s)', last_name, LEFT(first_name, 1), LEFT(middle_name, 1), service_number) AS description
 			FROM users
 			WHERE id=@user_id;`,
-		pgx.NamedArgs{"user_id": userID})
+		pgx.NamedArgs{"user_id": id})
+
+	var info string
+	if err := row.Scan(&info); err != nil {
+		return "", fmt.Errorf("%s: %w", op, err)
+	}
+
+	return info, nil
+}
+
+func (s *User) InfoByAbsenceID(ctx context.Context, id uint64) (string, error) {
+	const op = "user storage: read last name & initials by absence id"
+
+	log.Println(fmt.Sprintf("%s input: %d", op, id))
+
+	row := s.Pool.QueryRow(ctx,
+		`SELECT format('%s %s.%s. (%s)', last_name, LEFT(first_name, 1), LEFT(middle_name, 1), service_number) AS description
+			FROM users
+				JOIN absences a on users.id = a.user_id
+			WHERE a.id=@absence_id;`,
+		pgx.NamedArgs{"absence_id": id})
 
 	var info string
 	if err := row.Scan(&info); err != nil {

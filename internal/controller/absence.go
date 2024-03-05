@@ -55,7 +55,7 @@ var (
 
 func (c *controller) absenceProcessInit() {
 	c.manager.Bind(&absenceAddRecordBtn, absenceSelectActionState, absenceAddRecordHandler, deleteAfterHandler)
-	c.manager.Bind(&absenceEditRecordBtn, absenceSelectActionState, c.editRecordsHandler, deleteAfterHandler)
+	c.manager.Bind(&absenceEditRecordBtn, absenceSelectActionState, c.absenceSelectRecordHandler, deleteAfterHandler)
 
 	c.manager.Bind(tele.OnText, absenceInputUserState, c.absenceInputUserHandler)
 
@@ -152,17 +152,8 @@ func absenceNoUserHandler(tc tele.Context, state fsm.Context) error {
 		rm)
 }
 
-func (c *controller) absenceSelectUserHandler(tc tele.Context, usersInfo []model.UserInfo) error {
-	rm := &tele.ReplyMarkup{}
-	rows := make([]tele.Row, len(usersInfo))
-	for i, info := range usersInfo {
-		absenceUserConfirmBtn.Text = info.Description
-		absenceUserConfirmBtn.Data = info.ID
-		rows[i] = rm.Row(absenceUserConfirmBtn)
-	}
-	rm.Inline(rows...)
-	rm.ResizeKeyboard = true
-	rm.OneTimeKeyboard = true
+func (c *controller) absenceSelectUserHandler(tc tele.Context, usersInfo []model.RecordInfo) error {
+	rm := replyMarkupList(absenceUserConfirmBtn, usersInfo)
 
 	return tc.Send(`❗️ Найдено более одного сотрудника.
 Выберите требуемого:`,
@@ -175,12 +166,6 @@ func (c *controller) absenceConfirmUserHandler(tc tele.Context, state fsm.Contex
 	state.Update(absenceUserIDKey, id)
 	go state.Set(absenceSelectCodeState)
 	return c.absenceSelectCodeHandler(tc, state)
-}
-
-func (c *controller) editRecordsHandler(tc tele.Context, state fsm.Context) error {
-	go state.Set(absenceSelectRecordState)
-
-	return c.absenceSelectRecordHandler(tc, state)
 }
 
 func (c *controller) absenceSelectRecordHandler(tc tele.Context, state fsm.Context) error {
@@ -198,6 +183,8 @@ func (c *controller) absenceSelectRecordHandler(tc tele.Context, state fsm.Conte
 	rm := replyMarkupList(absenceRecordConfirmBtn, absenceList)
 
 	log.Println("absence select record handler reply keyboard:", rm.InlineKeyboard)
+
+	go state.Set(absenceSelectRecordState)
 
 	return tc.Send("<b>Выберите запись</b>", rm)
 }
@@ -278,6 +265,27 @@ func (c *controller) absenceSkipEndHandler(tc tele.Context, state fsm.Context) e
 }
 
 func (c *controller) absenceCheckData(tc tele.Context, state fsm.Context, msg string) error {
+	if recordID := dataFromState[uint64](state, absenceRecordIDKey); recordID != 0 {
+		info, err := c.user.InfoWithSpecifiedAbsenceID(context.Background(), recordID)
+		if err != nil {
+			tc.Bot().OnError(err, tc)
+			state.Finish(true)
+			return tc.Send("Ошибка при поиске записи о неявке в БД")
+		}
+
+		return tc.Send(fmt.Sprintf(
+			`%s
+
+<b>Проверьте данные:</b>
+<i>Сотрудник</i>: %q
+<i>Дата окончания</i>: %v`,
+			msg,
+			info,
+			dataFromState[time.Time](state, absenceEndKey),
+		),
+			replyMarkupForConfirmState())
+	}
+
 	a := absenceFromStateStorage(state)
 
 	info, err := c.user.InfoWithSpecifiedID(context.Background(), a.UserID)
@@ -325,7 +333,7 @@ func (c *controller) absenceConfirmHandler(tc tele.Context, state fsm.Context) e
 		if err != nil {
 			tc.Bot().OnError(err, tc)
 			state.Finish(true)
-			return tc.Send("Ошибка при обновлении записи  в БД")
+			return tc.Send("Ошибка при обновлении записи в БД")
 		}
 
 		header = `<b>Данные обновлены</b>\n`

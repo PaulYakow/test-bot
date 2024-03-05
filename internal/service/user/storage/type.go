@@ -34,8 +34,8 @@ type userInfo struct {
 	Description string `db:"description"`
 }
 
-func convertUserInfoToModel(ui userInfo) model.UserInfo {
-	return model.UserInfo{
+func convertUserInfoToModel(ui userInfo) model.RecordInfo {
+	return model.RecordInfo{
 		ID:          strconv.FormatUint(ui.ID, 10),
 		Description: ui.Description,
 	}

@@ -29,10 +29,14 @@ func (s *Service) IDWithSpecifiedLastName(ctx context.Context, lastName string) 
 	return s.storage.IDByLastName(ctx, lastName)
 }
 
-func (s *Service) ListWithSpecifiedLastName(ctx context.Context, lastName string) ([]model.UserInfo, error) {
+func (s *Service) ListWithSpecifiedLastName(ctx context.Context, lastName string) ([]model.RecordInfo, error) {
 	return s.storage.ListByLastName(ctx, lastName)
 }
 
 func (s *Service) InfoWithSpecifiedID(ctx context.Context, id uint64) (string, error) {
 	return s.storage.InfoByID(ctx, id)
+}
+
+func (s *Service) InfoWithSpecifiedAbsenceID(ctx context.Context, id uint64) (string, error) {
+	return s.storage.InfoByAbsenceID(ctx, id)
 }
