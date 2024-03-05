@@ -281,7 +281,7 @@ func (c *controller) absenceCheckData(tc tele.Context, state fsm.Context, msg st
 <i>Дата окончания</i>: %v`,
 			msg,
 			info,
-			dataFromState[time.Time](state, absenceEndKey),
+			dateMessage(dataFromState[time.Time](state, absenceEndKey)),
 		),
 			replyMarkupForConfirmState())
 	}
@@ -317,6 +317,33 @@ func (c *controller) absenceConfirmHandler(tc tele.Context, state fsm.Context) e
 	defer state.Finish(true)
 
 	// FIXME: Повтор (c.absenceCheckData)
+	if recordID := dataFromState[uint64](state, absenceRecordIDKey); recordID != 0 {
+		info, err := c.user.InfoWithSpecifiedAbsenceID(context.Background(), recordID)
+		if err != nil {
+			tc.Bot().OnError(err, tc)
+			state.Finish(true)
+			return tc.Send("Ошибка при поиске записи о неявке в БД")
+		}
+
+		date := dataFromState[time.Time](state, absenceEndKey)
+		err = c.absence.UpdateEndDate(context.Background(), recordID, date)
+		if err != nil {
+			tc.Bot().OnError(err, tc)
+			state.Finish(true)
+			return tc.Send("Ошибка при обновлении записи о неявке в БД")
+		}
+
+		return tc.Send(fmt.Sprintf(
+			`<b>Данные обновлены</b>
+
+<i>Сотрудник</i>: %q
+<i>Дата окончания</i>: %v`,
+			info,
+			dateMessage(date),
+		),
+			tele.RemoveKeyboard)
+	}
+
 	a := absenceFromStateStorage(state)
 	info, err := c.user.InfoWithSpecifiedID(context.Background(), a.UserID)
 	if err != nil {
@@ -325,41 +352,25 @@ func (c *controller) absenceConfirmHandler(tc tele.Context, state fsm.Context) e
 		return tc.Send("Ошибка при поиске сотрудника в БД")
 	}
 
-	header := `<b>Данные приняты</b>\n`
-	footer := ""
-
-	if recordID := dataFromState[uint64](state, absenceRecordIDKey); recordID != 0 {
-		err = c.absence.UpdateEndDate(context.Background(), recordID, a.DateEnd)
-		if err != nil {
-			tc.Bot().OnError(err, tc)
-			state.Finish(true)
-			return tc.Send("Ошибка при обновлении записи в БД")
-		}
-
-		header = `<b>Данные обновлены</b>\n`
-	} else {
-		id, err := c.absence.Add(context.Background(), absenceFromStateStorage(state))
-		if err != nil {
-			tc.Bot().OnError(err, tc)
-			return tc.Send(fmt.Sprintf("Ошибка сохранения: %v", err))
-		}
-
-		footer = fmt.Sprintf(`\n<u>ID записи: %d</u>`, id)
+	id, err := c.absence.Add(context.Background(), a)
+	if err != nil {
+		tc.Bot().OnError(err, tc)
+		return tc.Send(fmt.Sprintf("Ошибка сохранения: %v", err))
 	}
 
 	return tc.Send(fmt.Sprintf(
-		`%s
+		`<b>Данные приняты</b>
+
 <i>Сотрудник</i>: %q
 <i>Причина неявки</i>: %q
 <i>Дата начала</i>: %v
 <i>Дата окончания</i>: %v
-%s`,
-		header,
+<u>ID записи: %d</u>`,
 		info,
 		a.Code,
 		dateMessage(a.DateBegin),
 		dateMessage(a.DateEnd),
-		footer,
+		id,
 	),
 		tele.RemoveKeyboard)
 }
