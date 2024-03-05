@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"log"
 	"strconv"
 	"time"
 
@@ -54,7 +55,7 @@ var (
 
 func (c *controller) absenceProcessInit() {
 	c.manager.Bind(&absenceAddRecordBtn, absenceSelectActionState, absenceAddRecordHandler, deleteAfterHandler)
-	c.manager.Bind(&absenceEditRecordBtn, absenceSelectActionState, c.absenceSelectRecordHandler)
+	c.manager.Bind(&absenceEditRecordBtn, absenceSelectActionState, c.editRecordsHandler, deleteAfterHandler)
 
 	c.manager.Bind(tele.OnText, absenceInputUserState, c.absenceInputUserHandler)
 
@@ -176,6 +177,12 @@ func (c *controller) absenceConfirmUserHandler(tc tele.Context, state fsm.Contex
 	return c.absenceSelectCodeHandler(tc, state)
 }
 
+func (c *controller) editRecordsHandler(tc tele.Context, state fsm.Context) error {
+	go state.Set(absenceSelectRecordState)
+
+	return c.absenceSelectRecordHandler(tc, state)
+}
+
 func (c *controller) absenceSelectRecordHandler(tc tele.Context, state fsm.Context) error {
 	absenceList, err := c.absence.ListWithNullEndDate(context.Background())
 	if err != nil {
@@ -198,7 +205,7 @@ func (c *controller) absenceSelectRecordHandler(tc tele.Context, state fsm.Conte
 	rm.Inline(rows...)
 	rm.ResizeKeyboard = true
 
-	go state.Set(absenceSelectRecordState)
+	log.Println("absence select record handler reply keyboard:", rm.InlineKeyboard)
 
 	return tc.Send("<b>Выберите запись</b>", rm)
 }
