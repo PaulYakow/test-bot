@@ -54,7 +54,7 @@ var (
 
 func (c *controller) absenceProcessInit() {
 	c.manager.Bind(&absenceAddRecordBtn, absenceSelectActionState, absenceAddRecordHandler, deleteAfterHandler)
-	c.manager.Bind(&absenceEditRecordBtn, absenceSelectActionState, c.absenceSelectRecordHandler, deleteAfterHandler)
+	c.manager.Bind(&absenceEditRecordBtn, absenceSelectActionState, c.absenceSelectRecordHandler)
 
 	c.manager.Bind(tele.OnText, absenceInputUserState, c.absenceInputUserHandler)
 
