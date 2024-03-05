@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -65,11 +66,11 @@ func (s *Absence) ListCodes(ctx context.Context) ([]string, error) {
 	return codes, nil
 }
 
-func (s *Absence) ListByNullEndDate(ctx context.Context) ([]model.AbsenceInfo, error) {
+func (s *Absence) ListByNullEndDate(ctx context.Context) ([]model.RecordInfo, error) {
 	const op = "absence storage: list absences by null end date"
 
 	rows, err := s.Pool.Query(ctx,
-		`SELECT a.id,
+		`SELECT a.id AS id,
        				format('%s %s.%s. - %s (%s - н.в.)',
 							last_name,
               				LEFT(first_name, 1),
@@ -90,10 +91,12 @@ func (s *Absence) ListByNullEndDate(ctx context.Context) ([]model.AbsenceInfo, e
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	infos := make([]model.AbsenceInfo, len(absenceList))
+	infos := make([]model.RecordInfo, len(absenceList))
 	for i, ai := range absenceList {
 		infos[i] = convertAbsenceInfoToModel(ai)
 	}
+
+	log.Println(op, infos)
 
 	return infos, nil
 }

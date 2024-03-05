@@ -35,8 +35,8 @@ type absenceInfo struct {
 	Description string `db:"description"`
 }
 
-func convertAbsenceInfoToModel(ui absenceInfo) model.AbsenceInfo {
-	return model.AbsenceInfo{
+func convertAbsenceInfoToModel(ui absenceInfo) model.RecordInfo {
+	return model.RecordInfo{
 		ID:          strconv.FormatUint(ui.ID, 10),
 		Description: ui.Description,
 	}

@@ -3,7 +3,6 @@ package controller
 import (
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/vitaliy-ukiru/fsm-telebot"
 	"github.com/vitaliy-ukiru/fsm-telebot/storages/memory"
@@ -11,6 +10,7 @@ import (
 	"gopkg.in/telebot.v3/middleware"
 
 	"github.com/PaulYakow/test-bot/internal/config"
+	"github.com/PaulYakow/test-bot/internal/model"
 )
 
 // TODO: После завершения (или отмены) процесса удалять все сообщения кроме команды и последнего сообщения (в которое добавить информацию о созданной записи)
@@ -159,22 +159,6 @@ func cancelHandler(tc tele.Context, state fsm.Context) error {
 	return tc.Send("Процесс добавления отменён. Введённые данные удалены.")
 }
 
-// TODO: move to helpers
-func dateMessage(d time.Time) string {
-	if d.IsZero() {
-		return "<u>Не указана</u>"
-	}
-
-	return d.Format(dateLayout)
-}
-
-func dataFromState[T any](state fsm.Context, key string) T {
-	var data T
-	state.MustGet(key, &data)
-
-	return data
-}
-
 // TODO: move to view/ui
 func replyMarkupWithCancel() *tele.ReplyMarkup {
 	rm := &tele.ReplyMarkup{}
@@ -201,6 +185,21 @@ func replyMarkupForConfirmState() *tele.ReplyMarkup {
 		rm.Row(confirmBtn),
 		rm.Row(resetBtn, cancelBtn),
 	)
+
+	return rm
+}
+
+func replyMarkupList(btn tele.Btn, list []model.RecordInfo) *tele.ReplyMarkup {
+	rm := &tele.ReplyMarkup{}
+	rows := make([]tele.Row, len(list))
+	for i, item := range list {
+		absenceUserConfirmBtn.Text = item.Description
+		absenceUserConfirmBtn.Data = item.ID
+		rows[i] = rm.Row(btn)
+	}
+	rm.Inline(rows...)
+	rm.ResizeKeyboard = true
+	rm.OneTimeKeyboard = true
 
 	return rm
 }

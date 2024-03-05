@@ -30,7 +30,7 @@ func (s *Service) Add(ctx context.Context, absence model.Absence) (uint64, error
 	return s.storage.Create(ctx, absence)
 }
 
-func (s *Service) ListWithNullEndDate(ctx context.Context) ([]model.AbsenceInfo, error) {
+func (s *Service) ListWithNullEndDate(ctx context.Context) ([]model.RecordInfo, error) {
 	return s.storage.ListByNullEndDate(ctx)
 }
 
