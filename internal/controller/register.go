@@ -3,7 +3,6 @@ package controller
 import (
 	"context"
 	"fmt"
-	"log"
 	"strconv"
 	"time"
 
@@ -13,27 +12,25 @@ import (
 	"github.com/PaulYakow/test-bot/internal/model"
 )
 
-const (
-	lastNameKey      = "last_name"
-	firstNameKey     = "first_name"
-	middleNameKey    = "middle_name"
-	birthdayKey      = "birthday"
-	positionKey      = "position"
-	serviceNumberKey = "service_number"
-)
-
 var (
 	// registerSG - группа состояний reg (префикс). Хранит состояния для регистрации пользователя.
-	registerSG = fsm.NewStateGroup("reg")
+	registerSG = fsm.NewStateGroup("user")
 
 	// Последовательность состояний процесса регистрации пользователя
-	registerLastNameState      = registerSG.New(lastNameKey)
-	registerFirstNameState     = registerSG.New(firstNameKey)
-	registerMiddleNameState    = registerSG.New(middleNameKey)
-	registerBirthdayState      = registerSG.New(birthdayKey)
-	registerPositionState      = registerSG.New(positionKey)
-	registerServiceNumberState = registerSG.New(serviceNumberKey)
+	registerLastNameState      = registerSG.New("last_name")
+	registerFirstNameState     = registerSG.New("first_name")
+	registerMiddleNameState    = registerSG.New("middle_name")
+	registerBirthdayState      = registerSG.New("birthday")
+	registerPositionState      = registerSG.New("position")
+	registerServiceNumberState = registerSG.New("service_number")
 	registerConfirmState       = registerSG.New("confirm")
+
+	registerLastNameKey      = registerLastNameState.GoString()
+	registerFirstNameKey     = registerFirstNameState.GoString()
+	registerMiddleNameKey    = registerMiddleNameState.GoString()
+	registerBirthdayKey      = registerBirthdayState.GoString()
+	registerPositionKey      = registerPositionState.GoString()
+	registerServiceNumberKey = registerServiceNumberState.GoString()
 )
 
 func (c *controller) registerProcessInit() {
@@ -44,6 +41,7 @@ func (c *controller) registerProcessInit() {
 	c.manager.Bind(tele.OnText, registerBirthdayState, registerBirthdayHandler)
 	c.manager.Bind(tele.OnText, registerPositionState, registerPositionHandler)
 	c.manager.Bind(tele.OnText, registerServiceNumberState, registerServiceNumberHandler)
+
 	c.manager.Bind(&confirmBtn, registerConfirmState, c.registerConfirmHandler, editFormMessage("Проверьте", "Введённые"))
 	c.manager.Bind(&resetBtn, registerConfirmState, registerResetHandler, editFormMessage("Проверьте", "Старые"))
 	c.manager.Bind(&cancelBtn, registerConfirmState, cancelHandler, deleteAfterHandler)
@@ -56,7 +54,7 @@ func startRegisterHandler(tc tele.Context, state fsm.Context) error {
 
 func registerLastNameHandler(tc tele.Context, state fsm.Context) error {
 	input := tc.Message().Text
-	go state.Update(lastNameKey, input)
+	go state.Update(registerLastNameKey, input)
 
 	go state.Set(registerFirstNameState)
 	return tc.Send("Введите имя сотрудника")
@@ -64,7 +62,7 @@ func registerLastNameHandler(tc tele.Context, state fsm.Context) error {
 
 func registerFirstNameHandler(tc tele.Context, state fsm.Context) error {
 	input := tc.Message().Text
-	go state.Update(firstNameKey, input)
+	go state.Update(registerFirstNameKey, input)
 
 	go state.Set(registerMiddleNameState)
 	return tc.Send("Введите отчество сотрудника")
@@ -72,7 +70,7 @@ func registerFirstNameHandler(tc tele.Context, state fsm.Context) error {
 
 func registerMiddleNameHandler(tc tele.Context, state fsm.Context) error {
 	input := tc.Message().Text
-	go state.Update(middleNameKey, input)
+	go state.Update(registerMiddleNameKey, input)
 
 	go state.Set(registerBirthdayState)
 	return tc.Send("Введите дату рождения сотрудника в формате ДД.ММ.ГГГГ (например, 01.01.2001)")
@@ -83,7 +81,7 @@ func registerBirthdayHandler(tc tele.Context, state fsm.Context) error {
 	if err != nil {
 		return tc.Send("Дата должна иметь формат ДД.ММ.ГГГГ (например, 01.01.2001)")
 	}
-	go state.Update(birthdayKey, input)
+	go state.Update(registerBirthdayKey, input)
 
 	go state.Set(registerPositionState)
 	return tc.Send("Введите должность сотрудника")
@@ -91,7 +89,7 @@ func registerBirthdayHandler(tc tele.Context, state fsm.Context) error {
 
 func registerPositionHandler(tc tele.Context, state fsm.Context) error {
 	input := tc.Message().Text
-	go state.Update(positionKey, input)
+	go state.Update(registerPositionKey, input)
 
 	go state.Set(registerServiceNumberState)
 	return tc.Send("Введите табельный номер сотрудника")
@@ -102,7 +100,7 @@ func registerServiceNumberHandler(tc tele.Context, state fsm.Context) error {
 	if err != nil || serviceNumber <= 0 {
 		return tc.Send("Некорректный номер. Попробуйте ещё раз.")
 	}
-	go state.Update(serviceNumberKey, serviceNumber)
+	go state.Update(registerServiceNumberKey, serviceNumber)
 
 	go state.Set(registerConfirmState)
 
@@ -146,16 +144,12 @@ func registerResetHandler(tc tele.Context, state fsm.Context) error {
 }
 
 func userFromStateStorage(state fsm.Context) model.User {
-	mu := model.User{}
-
-	state.MustGet(lastNameKey, mu.LastName)
-	state.MustGet(firstNameKey, mu.FirstName)
-	state.MustGet(middleNameKey, mu.MiddleName)
-	state.MustGet(birthdayKey, mu.Birthday)
-	state.MustGet(positionKey, mu.Position)
-	state.MustGet(serviceNumberKey, mu.ServiceNumber)
-
-	log.Printf("register user: from state storage %v\n", mu)
-
-	return mu
+	return model.User{
+		LastName:      dataFromState[string](state, registerLastNameKey),
+		FirstName:     dataFromState[string](state, registerFirstNameKey),
+		MiddleName:    dataFromState[string](state, registerMiddleNameKey),
+		Birthday:      dataFromState[time.Time](state, registerBirthdayKey),
+		Position:      dataFromState[string](state, registerPositionKey),
+		ServiceNumber: dataFromState[int](state, registerServiceNumberKey),
+	}
 }

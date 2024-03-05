@@ -365,6 +365,7 @@ func (c *controller) absenceConfirmHandler(tc tele.Context, state fsm.Context) e
 <i>Причина неявки</i>: %q
 <i>Дата начала</i>: %v
 <i>Дата окончания</i>: %v
+
 <u>ID записи: %d</u>`,
 		info,
 		a.Code,
