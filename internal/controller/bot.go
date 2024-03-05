@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/vitaliy-ukiru/fsm-telebot"
 	"github.com/vitaliy-ukiru/fsm-telebot/storages/memory"
@@ -156,6 +157,22 @@ func helpHandler(tc tele.Context) error {
 func cancelHandler(tc tele.Context, state fsm.Context) error {
 	go state.Finish(true)
 	return tc.Send("Процесс добавления отменён. Введённые данные удалены.")
+}
+
+// TODO: move to helpers
+func dateMessage(d time.Time) string {
+	if d.IsZero() {
+		return "<u>Не указана</u>"
+	}
+
+	return d.Format(dateLayout)
+}
+
+func dataFromState[T any](state fsm.Context, key string) T {
+	var data T
+	state.MustGet(key, &data)
+
+	return data
 }
 
 // TODO: move to view/ui

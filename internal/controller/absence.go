@@ -63,7 +63,7 @@ func (c *controller) absenceProcessInit() {
 
 	c.manager.Bind(&absenceUserConfirmBtn, absenceSelectUserState, c.absenceConfirmUserHandler, deleteAfterHandler)
 
-	c.manager.Bind(&absenceRecordConfirmBtn, absenceSelectRecordState, absenceConfirmRecordHandler)
+	c.manager.Bind(&absenceRecordConfirmBtn, absenceSelectRecordState, absenceConfirmRecordHandler, deleteAfterHandler)
 
 	c.manager.Bind(&absenceCodeConfirmBtn, absenceSelectCodeState, absenceConfirmCodeHandler, deleteAfterHandler)
 
@@ -144,13 +144,10 @@ func absenceNoUserHandler(tc tele.Context, state fsm.Context) error {
 	rm.ResizeKeyboard = true
 	rm.OneTimeKeyboard = true
 
-	var lastName string
-	state.MustGet(absenceLastNameKey, &lastName)
-
 	return tc.Send(
 		fmt.Sprintf(`Сотрудников с фамилией (либо частью фамилии) %q не найдено.
 Хотите повторить поиск?`,
-			lastName),
+			dataFromState[string](state, absenceLastNameKey)),
 		rm)
 }
 
@@ -191,23 +188,15 @@ func (c *controller) absenceSelectRecordHandler(tc tele.Context, state fsm.Conte
 	for i, ai := range absenceList {
 		absenceCodeConfirmBtn.Text = ai.Description
 		absenceCodeConfirmBtn.Data = ai.ID
-		rows[i] = tele.Row{absenceCodeConfirmBtn}
+		rows[i] = tele.Row{absenceRecordConfirmBtn}
 	}
 	rm := &tele.ReplyMarkup{}
 	rm.Inline(rows...)
 	rm.ResizeKeyboard = true
 
-	var id uint64
-	state.MustGet(absenceUserIDKey, &id)
-
-	info, err := c.user.InfoWithSpecifiedID(context.Background(), id)
-
 	go state.Set(absenceSelectRecordState)
 
-	return tc.Send(
-		fmt.Sprintf(`Выбран %s.
-<b>Выберите запись</b>`, info),
-		rm)
+	return tc.Send("<b>Выберите запись</b>", rm)
 }
 
 func absenceConfirmRecordHandler(tc tele.Context, state fsm.Context) error {
@@ -236,10 +225,7 @@ func (c *controller) absenceSelectCodeHandler(tc tele.Context, state fsm.Context
 	rm.Inline(rm.Split(len(btns)/2, btns)...)
 	rm.ResizeKeyboard = true
 
-	var id uint64
-	state.MustGet(absenceUserIDKey, &id)
-
-	info, err := c.user.InfoWithSpecifiedID(context.Background(), id)
+	info, err := c.user.InfoWithSpecifiedID(context.Background(), dataFromState[uint64](state, absenceUserIDKey))
 
 	return tc.Send(
 		fmt.Sprintf(`Выбран %s.
@@ -381,19 +367,4 @@ func absenceFromStateStorage(state fsm.Context) model.Absence {
 		DateBegin: dataFromState[time.Time](state, absenceBeginKey),
 		DateEnd:   dataFromState[time.Time](state, absenceEndKey),
 	}
-}
-
-func dateMessage(d time.Time) string {
-	if d.IsZero() {
-		return "<u>Не указана</u>"
-	}
-
-	return d.Format(dateLayout)
-}
-
-func dataFromState[T any](state fsm.Context, key string) T {
-	var data T
-	state.MustGet(key, &data)
-
-	return data
 }
