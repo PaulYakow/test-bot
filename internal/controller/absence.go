@@ -195,15 +195,17 @@ func (c *controller) absenceSelectRecordHandler(tc tele.Context, state fsm.Conte
 		return tc.Send("❗<b>Записей не найдено</b>")
 	}
 
+	// TODO: Повтор (выбор пользователей, кодов неявки)
+	rm := &tele.ReplyMarkup{}
 	rows := make([]tele.Row, len(absenceList))
 	for i, ai := range absenceList {
 		absenceCodeConfirmBtn.Text = ai.Description
 		absenceCodeConfirmBtn.Data = ai.ID
-		rows[i] = tele.Row{absenceRecordConfirmBtn}
+		rows[i] = rm.Row(absenceRecordConfirmBtn)
 	}
-	rm := &tele.ReplyMarkup{}
 	rm.Inline(rows...)
 	rm.ResizeKeyboard = true
+	rm.OneTimeKeyboard = true
 
 	log.Println("absence select record handler reply keyboard:", rm.InlineKeyboard)
 
