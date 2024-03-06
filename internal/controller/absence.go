@@ -25,9 +25,9 @@ date_end date - может заполняться позже (предусмот
 var (
 	absenceAddRecordBtn      = tele.Btn{Text: "🆕 Добавить новую запись", Unique: "absence_add_record"}
 	absenceEditRecordBtn     = tele.Btn{Text: "📝 Обновить существующую запись", Unique: "absence_edit_record"}
-	absenceUserConfirmBtn    = tele.Btn{Unique: "absence_confirm_user"}
-	absenceCodeConfirmBtn    = tele.Btn{Unique: "absence_confirm_code"}
-	absenceRecordConfirmBtn  = tele.Btn{Unique: "absence_confirm_record"}
+	absenceConfirmUserBtn    = tele.Btn{Unique: "absence_confirm_user"}
+	absenceConfirmCodeBtn    = tele.Btn{Unique: "absence_confirm_code"}
+	absenceConfirmRecordBtn  = tele.Btn{Unique: "absence_confirm_record"}
 	absenceRestartProcessBtn = tele.Btn{Text: "✅ Да", Unique: "absence_restart_process"}
 	absenceCancelProcessBtn  = tele.Btn{Text: "❌ Нет", Unique: "absence_cancel_process"}
 
@@ -53,7 +53,7 @@ var (
 	absenceEndKey      = absenceEndState.GoString()
 )
 
-func (c *controller) absenceProcessInit() {
+func (c *Controller) absenceProcessInit() {
 	c.manager.Bind(&absenceAddRecordBtn, absenceSelectActionState, absenceAddRecordHandler, deleteAfterHandler)
 	c.manager.Bind(&absenceEditRecordBtn, absenceSelectActionState, c.absenceSelectRecordHandler, deleteAfterHandler)
 
@@ -62,11 +62,11 @@ func (c *controller) absenceProcessInit() {
 	c.manager.Bind(&absenceRestartProcessBtn, absenceNoUserState, absenceAddRecordHandler, deleteAfterHandler)
 	c.manager.Bind(&absenceCancelProcessBtn, absenceNoUserState, cancelHandler, deleteAfterHandler)
 
-	c.manager.Bind(&absenceUserConfirmBtn, absenceSelectUserState, c.absenceConfirmUserHandler, deleteAfterHandler)
+	c.manager.Bind(&absenceConfirmUserBtn, absenceSelectUserState, c.absenceConfirmUserHandler, deleteAfterHandler)
 
-	c.manager.Bind(&absenceRecordConfirmBtn, absenceSelectRecordState, absenceConfirmRecordHandler, deleteAfterHandler)
+	c.manager.Bind(&absenceConfirmRecordBtn, absenceSelectRecordState, absenceConfirmRecordHandler, deleteAfterHandler)
 
-	c.manager.Bind(&absenceCodeConfirmBtn, absenceSelectCodeState, absenceConfirmCodeHandler, deleteAfterHandler)
+	c.manager.Bind(&absenceConfirmCodeBtn, absenceSelectCodeState, absenceConfirmCodeHandler, deleteAfterHandler)
 
 	c.manager.Bind(tele.OnText, absenceBeginState, absenceBeginHandler)
 
@@ -100,14 +100,14 @@ func absenceAddRecordHandler(tc tele.Context, state fsm.Context) error {
 		replyMarkupWithCancel())
 }
 
-func (c *controller) absenceInputUserHandler(tc tele.Context, state fsm.Context) error {
+func (c *Controller) absenceInputUserHandler(tc tele.Context, state fsm.Context) error {
 	lastName := tc.Message().Text
 
 	// Проверка количества записей:
 	// 0 - сотрудники с такой фамилией не найдены (absenceNoUserState)
 	// =1 - найден один сотрудник (absenceSelectCodeState)
 	// >1 - найдено несколько сотрудников (absenceSelectUserHandler)
-	usersInfo, err := c.user.ListWithSpecifiedLastName(context.Background(), lastName)
+	usersInfo, err := c.user.service.ListWithSpecifiedLastName(context.Background(), lastName)
 	if err != nil {
 		tc.Bot().OnError(err, tc)
 		state.Finish(true)
@@ -120,7 +120,7 @@ func (c *controller) absenceInputUserHandler(tc tele.Context, state fsm.Context)
 		go state.Set(absenceNoUserState)
 		return absenceNoUserHandler(tc, state)
 	case 1:
-		id, err := c.user.IDWithSpecifiedLastName(context.Background(), lastName)
+		id, err := c.user.service.IDWithSpecifiedLastName(context.Background(), lastName)
 		if err != nil {
 			tc.Bot().OnError(err, tc)
 			state.Finish(true)
@@ -152,15 +152,15 @@ func absenceNoUserHandler(tc tele.Context, state fsm.Context) error {
 		rm)
 }
 
-func (c *controller) absenceSelectUserHandler(tc tele.Context, usersInfo []model.RecordInfo) error {
-	rm := replyMarkupList(absenceUserConfirmBtn, usersInfo)
+func (c *Controller) absenceSelectUserHandler(tc tele.Context, usersInfo []model.RecordInfo) error {
+	rm := replyMarkupList(absenceConfirmUserBtn, usersInfo)
 
 	return tc.Send(`❗️ Найдено более одного сотрудника.
 Выберите требуемого:`,
 		rm)
 }
 
-func (c *controller) absenceConfirmUserHandler(tc tele.Context, state fsm.Context) error {
+func (c *Controller) absenceConfirmUserHandler(tc tele.Context, state fsm.Context) error {
 	id, _ := strconv.ParseUint(tc.Callback().Data, 10, 64)
 
 	state.Update(absenceUserIDKey, id)
@@ -168,8 +168,8 @@ func (c *controller) absenceConfirmUserHandler(tc tele.Context, state fsm.Contex
 	return c.absenceSelectCodeHandler(tc, state)
 }
 
-func (c *controller) absenceSelectRecordHandler(tc tele.Context, state fsm.Context) error {
-	absenceList, err := c.absence.ListWithNullEndDate(context.Background())
+func (c *Controller) absenceSelectRecordHandler(tc tele.Context, state fsm.Context) error {
+	absenceList, err := c.absence.service.ListWithNullEndDate(context.Background())
 	if err != nil {
 		tc.Bot().OnError(err, tc)
 		state.Finish(true)
@@ -180,7 +180,7 @@ func (c *controller) absenceSelectRecordHandler(tc tele.Context, state fsm.Conte
 		return tc.Send("❗<b>Записей не найдено</b>")
 	}
 
-	rm := replyMarkupList(absenceRecordConfirmBtn, absenceList)
+	rm := replyMarkupList(absenceConfirmRecordBtn, absenceList)
 
 	log.Println("absence select record handler reply keyboard:", rm.InlineKeyboard)
 
@@ -197,8 +197,8 @@ func absenceConfirmRecordHandler(tc tele.Context, state fsm.Context) error {
 	return tc.Send("Введите конечную дату в формате ДД.ММ.ГГГГ (например, 01.01.2001)")
 }
 
-func (c *controller) absenceSelectCodeHandler(tc tele.Context, state fsm.Context) error {
-	absenceCodes, err := c.absence.ListCodes(context.Background())
+func (c *Controller) absenceSelectCodeHandler(tc tele.Context, state fsm.Context) error {
+	absenceCodes, err := c.absence.service.ListCodes(context.Background())
 	if err != nil {
 		tc.Bot().OnError(err, tc)
 		state.Finish(true)
@@ -207,15 +207,15 @@ func (c *controller) absenceSelectCodeHandler(tc tele.Context, state fsm.Context
 
 	btns := make([]tele.Btn, len(absenceCodes))
 	for i, code := range absenceCodes {
-		absenceCodeConfirmBtn.Text = code
-		absenceCodeConfirmBtn.Data = code
-		btns[i] = absenceCodeConfirmBtn
+		absenceConfirmCodeBtn.Text = code
+		absenceConfirmCodeBtn.Data = code
+		btns[i] = absenceConfirmCodeBtn
 	}
 	rm := &tele.ReplyMarkup{}
 	rm.Inline(rm.Split(len(btns)/2, btns)...)
 	rm.ResizeKeyboard = true
 
-	info, err := c.user.InfoWithSpecifiedID(context.Background(), dataFromState[uint64](state, absenceUserIDKey))
+	info, err := c.user.service.InfoWithSpecifiedID(context.Background(), dataFromState[uint64](state, absenceUserIDKey))
 
 	return tc.Send(
 		fmt.Sprintf(`Выбран %s.
@@ -246,7 +246,7 @@ func absenceBeginHandler(tc tele.Context, state fsm.Context) error {
 }
 
 // TODO: календарь для выбора даты
-func (c *controller) absenceEndHandler(tc tele.Context, state fsm.Context) error {
+func (c *Controller) absenceEndHandler(tc tele.Context, state fsm.Context) error {
 	input, err := time.Parse(dateLayout, tc.Message().Text)
 	if err != nil {
 		return tc.Send("Дата должна иметь формат ДД.ММ.ГГГГ (например, 01.01.2001)")
@@ -257,16 +257,16 @@ func (c *controller) absenceEndHandler(tc tele.Context, state fsm.Context) error
 	return c.absenceCheckData(tc, state, "✅ Данные приняты.")
 }
 
-func (c *controller) absenceSkipEndHandler(tc tele.Context, state fsm.Context) error {
+func (c *Controller) absenceSkipEndHandler(tc tele.Context, state fsm.Context) error {
 	go state.Set(absenceConfirmState)
 	return c.absenceCheckData(tc, state,
 		`⚠️ Дата окончания пропущена.
 Остальные данные приняты.`)
 }
 
-func (c *controller) absenceCheckData(tc tele.Context, state fsm.Context, msg string) error {
+func (c *Controller) absenceCheckData(tc tele.Context, state fsm.Context, msg string) error {
 	if recordID := dataFromState[uint64](state, absenceRecordIDKey); recordID != 0 {
-		info, err := c.user.InfoWithSpecifiedAbsenceID(context.Background(), recordID)
+		info, err := c.user.service.InfoWithSpecifiedAbsenceID(context.Background(), recordID)
 		if err != nil {
 			tc.Bot().OnError(err, tc)
 			state.Finish(true)
@@ -288,7 +288,7 @@ func (c *controller) absenceCheckData(tc tele.Context, state fsm.Context, msg st
 
 	a := absenceFromStateStorage(state)
 
-	info, err := c.user.InfoWithSpecifiedID(context.Background(), a.UserID)
+	info, err := c.user.service.InfoWithSpecifiedID(context.Background(), a.UserID)
 	if err != nil {
 		tc.Bot().OnError(err, tc)
 		state.Finish(true)
@@ -313,12 +313,12 @@ func (c *controller) absenceCheckData(tc tele.Context, state fsm.Context, msg st
 
 }
 
-func (c *controller) absenceConfirmHandler(tc tele.Context, state fsm.Context) error {
+func (c *Controller) absenceConfirmHandler(tc tele.Context, state fsm.Context) error {
 	defer state.Finish(true)
 
 	// FIXME: Повтор (c.absenceCheckData)
 	if recordID := dataFromState[uint64](state, absenceRecordIDKey); recordID != 0 {
-		info, err := c.user.InfoWithSpecifiedAbsenceID(context.Background(), recordID)
+		info, err := c.user.service.InfoWithSpecifiedAbsenceID(context.Background(), recordID)
 		if err != nil {
 			tc.Bot().OnError(err, tc)
 			state.Finish(true)
@@ -326,7 +326,7 @@ func (c *controller) absenceConfirmHandler(tc tele.Context, state fsm.Context) e
 		}
 
 		date := dataFromState[time.Time](state, absenceEndKey)
-		err = c.absence.UpdateEndDate(context.Background(), recordID, date)
+		err = c.absence.service.UpdateEndDate(context.Background(), recordID, date)
 		if err != nil {
 			tc.Bot().OnError(err, tc)
 			state.Finish(true)
@@ -345,14 +345,14 @@ func (c *controller) absenceConfirmHandler(tc tele.Context, state fsm.Context) e
 	}
 
 	a := absenceFromStateStorage(state)
-	info, err := c.user.InfoWithSpecifiedID(context.Background(), a.UserID)
+	info, err := c.user.service.InfoWithSpecifiedID(context.Background(), a.UserID)
 	if err != nil {
 		tc.Bot().OnError(err, tc)
 		state.Finish(true)
 		return tc.Send("Ошибка при поиске сотрудника в БД")
 	}
 
-	id, err := c.absence.Add(context.Background(), a)
+	id, err := c.absence.service.Add(context.Background(), a)
 	if err != nil {
 		tc.Bot().OnError(err, tc)
 		return tc.Send(fmt.Sprintf("Ошибка сохранения: %v", err))

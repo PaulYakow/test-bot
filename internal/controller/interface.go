@@ -15,9 +15,15 @@ type UserService interface {
 	InfoWithSpecifiedAbsenceID(ctx context.Context, id uint64) (string, error)
 }
 
+type UserView interface {
+}
+
 type AbsenceService interface {
 	Add(ctx context.Context, absence model.Absence) (uint64, error)
 	ListCodes(ctx context.Context) ([]string, error)
 	ListWithNullEndDate(ctx context.Context) ([]model.RecordInfo, error)
 	UpdateEndDate(ctx context.Context, id uint64, date time.Time) error
+}
+
+type AbsenceView interface {
 }

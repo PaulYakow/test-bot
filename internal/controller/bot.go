@@ -36,19 +36,7 @@ var (
 	cancelBtn  = tele.Btn{Text: "❌ Отменить", Unique: "cancel"}
 )
 
-type ServiceSet struct {
-	User    UserService
-	Absence AbsenceService
-}
-
-type controller struct {
-	bot     *tele.Bot
-	manager *fsm.Manager
-	user    UserService
-	absence AbsenceService
-}
-
-func New(cfg *config.Config, ss ServiceSet) (*controller, error) {
+func New(cfg *config.Config, set Set) (*Controller, error) {
 	const op = "controller: create new"
 
 	bot, err := tele.NewBot(tele.Settings{
@@ -73,15 +61,15 @@ func New(cfg *config.Config, ss ServiceSet) (*controller, error) {
 
 	manager := fsm.NewManager(bot, nil, storage, nil)
 
-	return &controller{
+	return &Controller{
 		bot:     bot,
 		manager: manager,
-		user:    ss.User,
-		absence: ss.Absence,
+		user:    set.User,
+		absence: set.Absence,
 	}, nil
 }
 
-func (c *controller) Start() {
+func (c *Controller) Start() {
 	const op = "controller: bot start"
 
 	c.bot.Use(middleware.AutoRespond())
@@ -107,7 +95,7 @@ func (c *controller) Start() {
 	c.bot.Start()
 }
 
-func (c *controller) setCommands() {
+func (c *Controller) setCommands() {
 	const op = "controller: set commands"
 
 	// TODO: add const for commands - cmdHelp = "/help" - and use it
@@ -140,6 +128,7 @@ func (c *controller) setCommands() {
 
 	c.bot.Handle(helpEnd, helpHandler)
 	c.bot.Handle(testEnd, testHandler)
+
 	c.manager.Bind(addUserEnd, fsm.DefaultState, startRegisterHandler)
 	c.manager.Bind(addAbsenceEnd, fsm.DefaultState, startAbsenceHandler)
 	c.manager.Bind(cancelEnd, fsm.AnyState, cancelHandler)

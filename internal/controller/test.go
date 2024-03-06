@@ -3,13 +3,15 @@ package controller
 import (
 	"fmt"
 
-	tele "gopkg.in/telebot.v3"
+	tb "gopkg.in/telebot.v3"
 )
 
-func testHandler(tc tele.Context) error {
+func testHandler(tc tb.Context) error {
 	msg := `❕<b>Выберите действие</b>❕`
 
 	tc.Bot().Handle("\ftest_btn", testBtnHandler)
+	tc.Bot().Handle("\faction", actionBtnHandler)
+	tc.Bot().Handle("/form", formHandler(selectActionForm()))
 
 	testInfo := []struct {
 		ID          string
@@ -29,12 +31,12 @@ func testHandler(tc tele.Context) error {
 		},
 	}
 
-	inline := &tele.ReplyMarkup{}
-	btn := tele.Btn{
+	inline := &tb.ReplyMarkup{}
+	btn := tb.Btn{
 		Unique: "test_btn",
 	}
 
-	rows := make([]tele.Row, len(testInfo))
+	rows := make([]tb.Row, len(testInfo))
 	for i, info := range testInfo {
 		btn.Text = info.Description
 		btn.Data = info.ID
@@ -47,8 +49,45 @@ func testHandler(tc tele.Context) error {
 	return tc.Send(msg, inline)
 }
 
-func testBtnHandler(tc tele.Context) error {
+func testBtnHandler(tc tb.Context) error {
 	msg := fmt.Sprintf(`Callback info:
+Unique: %s
+Data: %s`,
+		tc.Callback().Unique,
+		tc.Callback().Data)
+
+	return tc.Send(msg)
+}
+
+type Form struct {
+	Message     string
+	ReplyMarkup *tb.ReplyMarkup
+}
+
+func selectActionForm() Form {
+	rm := &tb.ReplyMarkup{}
+	rm.Inline(
+		rm.Row(tb.Btn{Text: "Action #1", Unique: "action", Data: "action1_data"}),
+		rm.Row(tb.Btn{Text: "Action #2", Unique: "action", Data: "action2_data"}),
+	)
+
+	rm.ResizeKeyboard = true
+	rm.OneTimeKeyboard = true
+
+	return Form{
+		Message:     "❕<b>Выберите действие</b>❕",
+		ReplyMarkup: rm,
+	}
+}
+
+func formHandler(f Form) tb.HandlerFunc {
+	return func(tc tb.Context) error {
+		return tc.Send(f.Message, f.ReplyMarkup)
+	}
+}
+
+func actionBtnHandler(tc tb.Context) error {
+	msg := fmt.Sprintf(`Action callback info:
 Unique: %s
 Data: %s`,
 		tc.Callback().Unique,

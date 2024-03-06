@@ -33,7 +33,7 @@ var (
 	registerServiceNumberKey = registerServiceNumberState.GoString()
 )
 
-func (c *controller) registerProcessInit() {
+func (c *Controller) registerProcessInit() {
 	// User add process
 	c.manager.Bind(tele.OnText, registerLastNameState, registerLastNameHandler)
 	c.manager.Bind(tele.OnText, registerFirstNameState, registerFirstNameHandler)
@@ -124,10 +124,10 @@ func registerServiceNumberHandler(tc tele.Context, state fsm.Context) error {
 		replyMarkupForConfirmState())
 }
 
-func (c *controller) registerConfirmHandler(tc tele.Context, state fsm.Context) error {
+func (c *Controller) registerConfirmHandler(tc tele.Context, state fsm.Context) error {
 	defer state.Finish(true)
 
-	id, err := c.user.Add(context.Background(), userFromStateStorage(state))
+	id, err := c.user.service.Add(context.Background(), userFromStateStorage(state))
 	if err != nil {
 		tc.Bot().OnError(err, tc)
 		return tc.Send(fmt.Sprintf("Ошибка сохранения: %v", err))

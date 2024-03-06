@@ -6,17 +6,17 @@ import (
 
 	"github.com/PaulYakow/test-bot/internal/config"
 	"github.com/PaulYakow/test-bot/internal/controller"
-	"github.com/PaulYakow/test-bot/internal/service/absence"
-	astore "github.com/PaulYakow/test-bot/internal/service/absence/storage"
-	"github.com/PaulYakow/test-bot/internal/service/user"
-	ustore "github.com/PaulYakow/test-bot/internal/service/user/storage"
+	aService "github.com/PaulYakow/test-bot/internal/service/absence"
+	aStore "github.com/PaulYakow/test-bot/internal/service/absence/storage"
+	uService "github.com/PaulYakow/test-bot/internal/service/user"
+	uStore "github.com/PaulYakow/test-bot/internal/service/user/storage"
 	"github.com/PaulYakow/test-bot/internal/storage"
 )
 
 // Check interface implementation
 var (
-	_ controller.UserService    = &user.Service{}
-	_ controller.AbsenceService = &absence.Service{}
+	_ controller.UserService    = &uService.Service{}
+	_ controller.AbsenceService = &aService.Service{}
 )
 
 func Run(ctx context.Context, cfg *config.Config) error {
@@ -28,28 +28,28 @@ func Run(ctx context.Context, cfg *config.Config) error {
 	}
 
 	// Create user set
-	userStore, err := ustore.New(pgPool.Pool)
+	userStore, err := uStore.New(pgPool.Pool)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	userService := user.New(userStore)
+	userService := uService.New(userStore)
 
 	// Create absence set
-	absenceStore, err := astore.New(pgPool.Pool)
+	absenceStore, err := aStore.New(pgPool.Pool)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	absenceService := absence.New(absenceStore)
+	absenceService := aService.New(absenceStore)
 
 	// Create main set of services
-	serviceSet := controller.ServiceSet{
-		User:    userService,
-		Absence: absenceService,
+	set := controller.Set{
+		User:    controller.NewUser(userService, nil),
+		Absence: controller.NewAbsence(absenceService, nil),
 	}
 
-	ctrl, err := controller.New(cfg, serviceSet)
+	ctrl, err := controller.New(cfg, set)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
